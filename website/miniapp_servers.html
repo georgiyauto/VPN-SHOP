@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VPN — Серверы</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --tg-bg: var(--tg-theme-bg-color, #1a1a2e);
+    --tg-text: var(--tg-theme-text-color, #eaeaea);
+    --tg-hint: var(--tg-theme-hint-color, #888);
+    --tg-btn: var(--tg-theme-button-color, #6c63ff);
+    --tg-btn-text: var(--tg-theme-button-text-color, #fff);
+    --tg-secondary: var(--tg-theme-secondary-bg-color, #16213e);
+    --online: #00c853;
+    --offline: #ff1744;
+    --warning: #ff9800;
+    --radius: 14px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--tg-bg);
+    color: var(--tg-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    background: var(--tg-secondary);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .tab {
+    flex: 1;
+    padding: 13px 8px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tg-hint);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .2s;
+    user-select: none;
+  }
+  .tab.active {
+    color: var(--tg-btn);
+    border-bottom-color: var(--tg-btn);
+  }
+
+  /* ── Pages ── */
+  .page { display: none; flex: 1; }
+  .page.active { display: flex; flex-direction: column; }
+
+  /* ── Map ── */
+  #map {
+    flex: 1;
+    min-height: 55vh;
+    z-index: 1;
+  }
+
+  /* Leaflet dark tiles */
+  .leaflet-tile { filter: brightness(.7) invert(1) contrast(3) hue-rotate(200deg) saturate(.3) brightness(.7); }
+
+  /* ── Server list ── */
+  .list-page { padding: 12px; gap: 10px; overflow-y: auto; }
+
+  .server-card {
+    background: var(--tg-secondary);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    border: 1px solid rgba(255,255,255,.06);
+  }
+  .server-card:active { transform: scale(.98); }
+  .server-card.selected { border-color: var(--tg-btn); box-shadow: 0 0 0 2px rgba(108,99,255,.3); }
+
+  .server-flag { font-size: 26px; line-height: 1; }
+  .server-info { flex: 1; min-width: 0; }
+  .server-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .server-meta { font-size: 12px; color: var(--tg-hint); margin-top: 3px; display: flex; gap: 8px; align-items: center; }
+
+  .ping-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: rgba(0,200,83,.15);
+    color: var(--online);
+  }
+  .ping-badge.slow { background: rgba(255,152,0,.15); color: var(--warning); }
+  .ping-badge.offline { background: rgba(255,23,68,.15); color: var(--offline); }
+
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--online);
+    flex-shrink: 0;
+    box-shadow: 0 0 6px var(--online);
+  }
+  .status-dot.offline { background: var(--offline); box-shadow: 0 0 6px var(--offline); }
+
+  /* ── Bottom panel ── */
+  .bottom-panel {
+    background: var(--tg-secondary);
+    border-top: 1px solid rgba(255,255,255,.07);
+    padding: 12px 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .bottom-panel .hint { font-size: 12px; color: var(--tg-hint); flex: 1; }
+  .btn-primary {
+    background: var(--tg-btn);
+    color: var(--tg-btn-text);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-primary:active { opacity: .8; }
+
+  /* ── Notifications page ── */
+  .notif-page { padding: 16px; gap: 12px; overflow-y: auto; }
+
+  .notif-header {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .notif-sub {
+    font-size: 13px;
+    color: var(--tg-hint);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+
+  .toggle-row {
+    background: var(--tg-secondary);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .toggle-label { font-size: 14px; font-weight: 500; }
+  .toggle-desc { font-size: 12px; color: var(--tg-hint); margin-top: 2px; }
+
+  .toggle {
+    position: relative; width: 48px; height: 26px; flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,.15);
+    border-radius: 26px;
+    cursor: pointer;
+    transition: .25s;
+  }
+  .toggle-slider:before {
+    content: ''; position: absolute;
+    width: 20px; height: 20px; bottom: 3px; left: 3px;
+    background: #fff; border-radius: 50%;
+    transition: .25s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--tg-btn); }
+  .toggle input:checked + .toggle-slider:before { transform: translateX(22px); }
+
+  /* Notification items */
+  .notif-item {
+    background: var(--tg-secondary);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--tg-btn);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .notif-item.alert { border-left-color: var(--offline); }
+  .notif-item.ok { border-left-color: var(--online); }
+  .notif-time { font-size: 11px; color: var(--tg-hint); margin-top: 4px; }
+
+  /* ── Popup ── */
+  .popup-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.6); z-index: 200;
+    align-items: flex-end; justify-content: center;
+  }
+  .popup-overlay.show { display: flex; }
+  .popup {
+    background: var(--tg-bg);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px 36px;
+    width: 100%;
+    max-width: 480px;
+    animation: slideUp .25s ease-out;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+  .popup-title { font-size: 18px; font-weight: 700; margin-bottom: 14px; }
+  .popup-row { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0;
+    border-bottom: 1px solid rgba(255,255,255,.07); }
+  .popup-row:last-child { border: none; }
+  .popup-label { color: var(--tg-hint); }
+  .popup-close {
+    margin-top: 18px; width: 100%;
+    background: rgba(255,255,255,.08);
+    color: var(--tg-text);
+    border: none; border-radius: 12px; padding: 12px;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+
+  .empty-state {
+    text-align: center; padding: 40px 20px;
+    color: var(--tg-hint); font-size: 14px;
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+
+  .loader { text-align: center; padding: 40px; color: var(--tg-hint); }
+
+  /* Custom Leaflet marker */
+  .map-marker {
+    width: 32px; height: 32px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    border: 2px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .map-marker.online { background: var(--online); box-shadow: 0 2px 8px rgba(0,200,83,.5); }
+  .map-marker.offline { background: var(--offline); }
+  .map-marker-flag { transform: rotate(45deg); font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <div class="tab active" data-tab="map">🗺 Карта</div>
+  <div class="tab" data-tab="list">📋 Серверы</div>
+  <div class="tab" data-tab="notif">🔔 Уведомления</div>
+</div>
+
+<!-- MAP PAGE -->
+<div class="page active" id="tab-map">
+  <div id="map"></div>
+  <div class="bottom-panel">
+    <div class="hint" id="map-summary">Загрузка серверов...</div>
+    <button class="btn-primary" onclick="refreshPings()">↻ Пинг</button>
+  </div>
+</div>
+
+<!-- LIST PAGE -->
+<div class="page" id="tab-list">
+  <div class="list-page" id="server-list-container" style="display:flex;flex-direction:column;">
+    <div class="loader">⏳ Загрузка...</div>
+  </div>
+</div>
+
+<!-- NOTIFICATIONS PAGE -->
+<div class="page" id="tab-notif">
+  <div class="notif-page" style="display:flex;flex-direction:column;">
+    <div class="notif-header">🔔 Push-уведомления</div>
+    <div class="notif-sub">Получайте уведомления о статусе серверов и истечении подписки прямо в Telegram, даже когда бот не запущен.</div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Сервер упал</div>
+        <div class="toggle-desc">Уведомлять при недоступности</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="notif-server" checked onchange="saveNotifPrefs()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Смена SNI</div>
+        <div class="toggle-desc">При ротации конфигурации</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="notif-sni" onchange="saveNotifPrefs()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Подписка истекает</div>
+        <div class="toggle-desc">За 3 дня до конца</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="notif-expire" checked onchange="saveNotifPrefs()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">Технические работы</div>
+        <div class="toggle-desc">Плановые обслуживания</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="notif-maintenance" onchange="saveNotifPrefs()">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div style="margin-top:8px;margin-bottom:14px;">
+      <div class="notif-header" style="font-size:15px;margin-bottom:10px;">📨 Последние уведомления</div>
+      <div id="notif-history"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SERVER POPUP -->
+<div class="popup-overlay" id="server-popup" onclick="closePopup(event)">
+  <div class="popup" id="popup-content">
+    <div class="popup-title" id="popup-title">Сервер</div>
+    <div id="popup-rows"></div>
+    <button class="popup-close" onclick="closePopup()">Закрыть</button>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+  tg.setHeaderColor('bg_color');
+}
+
+// ── Config ────────────────────────────────────────────────────────────────────
+const API_BASE = window.location.origin; // same origin as mini app
+const USER_ID = tg?.initDataUnsafe?.user?.id || null;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let servers = [];
+let map = null;
+let markers = {};
+let selectedServer = null;
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    if (tab.dataset.tab === 'map' && !map) initMap();
+    if (tab.dataset.tab === 'notif') loadNotifHistory();
+  });
+});
+
+// ── Fetch servers ─────────────────────────────────────────────────────────────
+async function fetchServers() {
+  try {
+    const res = await fetch(`${API_BASE}/api/miniapp/servers`, {
+      headers: { 'X-Telegram-Init-Data': tg?.initData || '' }
+    });
+    if (!res.ok) throw new Error(res.status);
+    servers = await res.json();
+  } catch (e) {
+    // fallback mock data for UI preview
+    servers = [
+      { id:1, label:'Germany 1',    flag:'🇩🇪', lat:52.52,  lng:13.40,  is_online:true,  ping_ms:28,  load:42, protocol:'VLESS' },
+      { id:2, label:'Finland 2',    flag:'🇫🇮', lat:60.17,  lng:24.94,  is_online:true,  ping_ms:55,  load:17, protocol:'VLESS/VMess' },
+      { id:3, label:'Netherlands 1',flag:'🇳🇱', lat:52.37,  lng:4.89,   is_online:true,  ping_ms:35,  load:66, protocol:'VLESS' },
+      { id:4, label:'Poland 1',     flag:'🇵🇱', lat:52.23,  lng:21.01,  is_online:false, ping_ms:null,load:0,  protocol:'VLESS' },
+      { id:5, label:'USA East',     flag:'🇺🇸', lat:40.71,  lng:-74.01, is_online:true,  ping_ms:110, load:30, protocol:'Trojan' },
+      { id:6, label:'Japan 1',      flag:'🇯🇵', lat:35.68,  lng:139.69, is_online:true,  ping_ms:190, load:22, protocol:'Shadowsocks' },
+    ];
+  }
+  renderList();
+  if (map) renderMapMarkers();
+  updateMapSummary();
+}
+
+// ── Map ───────────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map', {
+    center: [51, 15], zoom: 3,
+    zoomControl: true, attributionControl: false,
+  });
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+  }).addTo(map);
+
+  if (servers.length) renderMapMarkers();
+}
+
+function makeMarkerIcon(server) {
+  const color = server.is_online ? '#00c853' : '#ff1744';
+  const html = `
+    <div style="
+      width:36px;height:36px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+      background:${color};border:2px solid #fff;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 8px rgba(0,0,0,.4)
+    ">
+      <span style="transform:rotate(45deg);font-size:16px;line-height:1;">${server.flag}</span>
+    </div>`;
+  return L.divIcon({ html, className: '', iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -36] });
+}
+
+function renderMapMarkers() {
+  Object.values(markers).forEach(m => map.removeLayer(m));
+  markers = {};
+
+  servers.forEach(srv => {
+    if (!srv.lat || !srv.lng) return;
+    const marker = L.marker([srv.lat, srv.lng], { icon: makeMarkerIcon(srv) });
+    const pingStr = srv.ping_ms ? `${srv.ping_ms} ms` : 'offline';
+    marker.bindPopup(`
+      <div style="font-family:-apple-system,sans-serif;min-width:160px;">
+        <div style="font-size:16px;font-weight:700;margin-bottom:6px;">${srv.flag} ${srv.label}</div>
+        <div style="font-size:13px;color:#555;">Пинг: <b>${pingStr}</b></div>
+        <div style="font-size:13px;color:#555;">Нагрузка: <b>${srv.load}%</b></div>
+        <div style="font-size:13px;color:#555;">Протоколы: <b>${srv.protocol}</b></div>
+        <div style="margin-top:6px;font-size:12px;color:${srv.is_online ? '#00c853' : '#ff1744'}">
+          ${srv.is_online ? '✅ Онлайн' : '❌ Недоступен'}
+        </div>
+      </div>
+    `, { maxWidth: 220 });
+    marker.addTo(map);
+    markers[srv.id] = marker;
+  });
+}
+
+function updateMapSummary() {
+  const online = servers.filter(s => s.is_online).length;
+  const total = servers.length;
+  const avgPing = servers.filter(s=>s.ping_ms).reduce((a,b,_,arr)=>a+b.ping_ms/arr.length,0)|0;
+  document.getElementById('map-summary').textContent =
+    `✅ ${online}/${total} онлайн · ⚡ ~${avgPing} мс`;
+}
+
+async function refreshPings() {
+  const btn = document.querySelector('#tab-map .btn-primary');
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/api/miniapp/ping`, {
+      headers: { 'X-Telegram-Init-Data': tg?.initData || '' }
+    });
+    if (res.ok) {
+      const pings = await res.json(); // {server_id: ping_ms|null}
+      servers.forEach(s => {
+        if (pings[s.id] !== undefined) {
+          s.ping_ms = pings[s.id];
+          s.is_online = pings[s.id] !== null;
+        }
+      });
+      renderList();
+      if (map) renderMapMarkers();
+      updateMapSummary();
+    }
+  } catch(e) {
+    // ignore - keep existing data
+  }
+  btn.textContent = '↻ Пинг';
+  btn.disabled = false;
+}
+
+// ── Server list ───────────────────────────────────────────────────────────────
+function pingClass(ms) {
+  if (!ms) return 'offline';
+  if (ms < 80) return '';
+  if (ms < 150) return 'slow';
+  return 'slow';
+}
+
+function renderList() {
+  const container = document.getElementById('server-list-container');
+  if (!servers.length) {
+    container.innerHTML = '<div class="empty-state"><div class="icon">🌍</div>Серверы не найдены</div>';
+    return;
+  }
+
+  container.innerHTML = servers.map(srv => `
+    <div class="server-card ${selectedServer === srv.id ? 'selected' : ''}"
+         onclick="showServerPopup(${srv.id})">
+      <div class="server-flag">${srv.flag}</div>
+      <div class="server-info">
+        <div class="server-name">${srv.label}</div>
+        <div class="server-meta">
+          <div class="status-dot ${srv.is_online ? '' : 'offline'}"></div>
+          ${srv.is_online ? 'Онлайн' : 'Недоступен'}
+          · ${srv.protocol || 'VLESS'}
+        </div>
+      </div>
+      <div class="ping-badge ${pingClass(srv.ping_ms)}">
+        ${srv.ping_ms ? srv.ping_ms + ' ms' : '—'}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Popup ──────────────────────────────────────────────────────────────────────
+function showServerPopup(id) {
+  const srv = servers.find(s => s.id === id);
+  if (!srv) return;
+  selectedServer = id;
+  renderList();
+
+  document.getElementById('popup-title').textContent = `${srv.flag} ${srv.label}`;
+  const rows = [
+    ['Статус', srv.is_online ? '✅ Онлайн' : '❌ Недоступен'],
+    ['Пинг', srv.ping_ms ? `${srv.ping_ms} мс` : '—'],
+    ['Нагрузка', srv.load !== undefined ? `${srv.load}%` : '—'],
+    ['Протоколы', srv.protocol || 'VLESS'],
+    ['Местоположение', `${srv.flag} ${srv.label.replace(/\d+/, '').trim()}`],
+  ];
+  document.getElementById('popup-rows').innerHTML = rows.map(([label, val]) =>
+    `<div class="popup-row"><span class="popup-label">${label}</span><span>${val}</span></div>`
+  ).join('');
+
+  document.getElementById('server-popup').classList.add('show');
+
+  // Если на вкладке карты — летим к маркеру
+  if (map && srv.lat && srv.lng) {
+    map.flyTo([srv.lat, srv.lng], 6, { duration: 0.8 });
+    if (markers[id]) markers[id].openPopup();
+  }
+}
+
+function closePopup(e) {
+  if (!e || e.target === document.getElementById('server-popup')) {
+    document.getElementById('server-popup').classList.remove('show');
+  }
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+function loadNotifPrefs() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem('notif_prefs') || '{}');
+    document.getElementById('notif-server').checked   = prefs.server   !== false;
+    document.getElementById('notif-sni').checked      = prefs.sni      || false;
+    document.getElementById('notif-expire').checked   = prefs.expire   !== false;
+    document.getElementById('notif-maintenance').checked = prefs.maintenance || false;
+  } catch(e) {}
+}
+
+function saveNotifPrefs() {
+  const prefs = {
+    server:      document.getElementById('notif-server').checked,
+    sni:         document.getElementById('notif-sni').checked,
+    expire:      document.getElementById('notif-expire').checked,
+    maintenance: document.getElementById('notif-maintenance').checked,
+  };
+  localStorage.setItem('notif_prefs', JSON.stringify(prefs));
+
+  // Сохраняем на сервере
+  fetch(`${API_BASE}/api/miniapp/notif_prefs`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Telegram-Init-Data': tg?.initData || ''
+    },
+    body: JSON.stringify({ user_id: USER_ID, prefs })
+  }).catch(() => {});
+
+  if (tg) tg.HapticFeedback?.impactOccurred('light');
+}
+
+async function loadNotifHistory() {
+  const container = document.getElementById('notif-history');
+  try {
+    const res = await fetch(`${API_BASE}/api/miniapp/notifications?limit=15`, {
+      headers: { 'X-Telegram-Init-Data': tg?.initData || '' }
+    });
+    if (!res.ok) throw new Error();
+    const items = await res.json();
+    if (!items.length) throw new Error('empty');
+    container.innerHTML = items.map(n => `
+      <div class="notif-item ${n.type}">
+        ${n.text}
+        <div class="notif-time">${n.time}</div>
+      </div>
+    `).join('');
+  } catch(e) {
+    container.innerHTML = `
+      <div class="notif-item ok">✅ <b>Все серверы в норме</b> — Germany 1, Finland 2, Netherlands 1
+        <div class="notif-time">Сегодня, 10:42</div>
+      </div>
+      <div class="notif-item alert">🚨 <b>Сервер Poland 1 недоступен</b>
+        <div class="notif-time">Вчера, 03:17</div>
+      </div>
+      <div class="notif-item">🔄 <b>SNI обновлён</b> на Germany 1
+        <div class="notif-time">2 дня назад</div>
+      </div>`;
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+loadNotifPrefs();
+fetchServers().then(() => {
+  initMap();
+  renderMapMarkers();
+});
+</script>
+</body>
+</html>

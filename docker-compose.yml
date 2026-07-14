@@ -1,0 +1,28 @@
+services:
+  vpnbot:
+    build: .
+    restart: always
+    image: vpnbot:latest
+    container_name: vpnbot
+    env_file: .env
+    ports:
+      - "1414:1414"   # Admin panel
+      - "8433:8433"   # VPN subscriptions
+      - "443:443/tcp" # Xray VLESS Reality
+      - "443:443/udp"
+      - "127.0.0.1:8090:8090" # Local node API is not public
+    volumes:
+      - vpnbot_postgres:/var/lib/postgresql/data
+      - vpnbot_letsencrypt:/etc/letsencrypt
+      - ./backups:/app/backups
+      - ./logs:/app/logs
+      - ./.env:/app/.env
+      - vpnbot_xray_config:/etc/xray
+      - vpnbot_xray_state:/var/lib/kawavpn-xray
+    shm_size: '256mb'
+
+volumes:
+  vpnbot_postgres:
+  vpnbot_letsencrypt:
+  vpnbot_xray_config:
+  vpnbot_xray_state:

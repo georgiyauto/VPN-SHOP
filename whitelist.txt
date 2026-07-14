@@ -1,0 +1,156 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# whitelist.txt — домены для прямого доступа (не через VPN)
+# Трафик к этим доменам идёт напрямую, не через туннель.
+# Формат: один домен на строку. Поддомены включаются автоматически.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Российские поисковики и порталы ──────────────────────────────────────────
+yandex.ru
+yandex.com
+ya.ru
+mail.ru
+ok.ru
+vk.com
+vk.ru
+vkontakte.ru
+rambler.ru
+lenta.ru
+rbc.ru
+ria.ru
+tass.ru
+rt.com
+gazeta.ru
+kommersant.ru
+vedomosti.ru
+kp.ru
+mk.ru
+life.ru
+fontanka.ru
+interfax.ru
+
+# ── Российские магазины и маркетплейсы ───────────────────────────────────────
+ozon.ru
+wildberries.ru
+wb.ru
+avito.ru
+aliexpress.ru
+eldorado.ru
+mvideo.ru
+dns-shop.ru
+citilink.ru
+lamoda.ru
+sbermegamarket.ru
+megamarket.ru
+goods.ru
+beru.ru
+
+# ── Российские банки и финтех ─────────────────────────────────────────────────
+sberbank.ru
+sberpay.ru
+sberonline.ru
+online.sberbank.ru
+tinkoff.ru
+tbank.ru
+vtb.ru
+vtb24.ru
+alfabank.ru
+alpha-bank.ru
+raiffeisen.ru
+raiffeisenbank.ru
+gazprombank.ru
+rgs.ru
+gosuslugi.ru
+mos.ru
+nalog.gov.ru
+nalog.ru
+pfr.gov.ru
+sfr.gov.ru
+
+# ── Государственные сайты ─────────────────────────────────────────────────────
+kremlin.ru
+government.ru
+duma.gov.ru
+council.gov.ru
+cbr.ru
+rosreestr.gov.ru
+sudrf.ru
+rkn.gov.ru
+mvd.ru
+fsb.ru
+customs.gov.ru
+
+# ── Российские сервисы и приложения ──────────────────────────────────────────
+yandexmaps.ru
+maps.yandex.ru
+yandex.net
+yastatic.net
+yandexcloud.net
+yandex-team.ru
+kinopoisk.ru
+ivi.ru
+rutube.ru
+start.ru
+okko.tv
+more.tv
+premier.one
+amediateka.ru
+kion.ru
+mts.ru
+mts-music.ru
+beeline.ru
+beeline-tv.ru
+megafon.ru
+tele2.ru
+rostelekom.ru
+rt.ru
+2gis.ru
+2gis.com
+yandex.taxi
+taxi.yandex.ru
+drive.yandex.ru
+
+# ── CDN и инфраструктура (используется российскими сайтами) ──────────────────
+gcore.com
+gc.io
+selectel.ru
+selectel.net
+hetzner.com
+timeweb.com
+timeweb.ru
+beget.com
+beget.ru
+reg.ru
+nic.ru
+spaceweb.ru
+sweb.ru
+
+# ── Российские соцсети и мессенджеры ─────────────────────────────────────────
+icq.com
+myteam.mail.ru
+agent.mail.ru
+tenchat.ru
+yappy.ru
+
+# ── Антиблокировочные/bypass SNI цели (для Reality) ──────────────────────────
+# Эти домены используются как SNI цели для VLESS Reality
+www.microsoft.com
+microsoft.com
+www.apple.com
+apple.com
+www.amazon.com
+amazon.com
+www.cloudflare.com
+cloudflare.com
+www.fastly.com
+fastly.com
+www.akamaiedge.net
+akamaiedge.net
+www.yahoo.com
+yahoo.com
+addons.mozilla.org
+www.intel.com
+intel.com
+www.samsung.com
+samsung.com
+www.lg.com
+lg.com

@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KawaVPN — Панель настройки</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Manrope:wght@400;500;600;700;800&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080812;--surf:#0e0e1c;--card:#13131f;
+  --border:rgba(124,107,255,.14);--bh:rgba(124,107,255,.38);
+  --acc:#7c6bff;--acc2:#b39dff;--acc3:#ff6b9d;
+  --text:#e8e4ff;--muted:#6b6a8a;--muted2:#4a4968;
+  --ok:#4dffb0;--err:#ff6b6b;--warn:#ffb86b;
+  --mono:'JetBrains Mono',monospace;--sans:'Manrope',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(124,107,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(124,107,255,.025) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);pointer-events:none;z-index:0}
+.orb1{width:500px;height:500px;background:rgba(124,107,255,.1);top:-150px;left:-150px}
+.orb2{width:350px;height:350px;background:rgba(255,107,157,.07);bottom:-80px;right:-80px}
+.shell{position:relative;z-index:1;display:flex;min-height:100vh}
+.sidebar{width:240px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--border);padding:0;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{padding:22px 20px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.brand-name{font-size:18px;font-weight:800;background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.brand-sub{font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.nav{flex:1;padding:8px 0}
+.nav-section{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted2);padding:14px 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;transition:all .15s;border-left:2px solid transparent}
+.nav-item:hover{color:var(--text);background:rgba(124,107,255,.06)}
+.nav-item.active{color:var(--text);background:rgba(124,107,255,.1);border-left-color:var(--acc)}
+.nav-item .ni{font-size:15px;width:18px;text-align:center;flex-shrink:0}
+.sidebar-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--mono)}
+.main{flex:1;padding:36px 40px;max-width:860px;overflow-y:auto}
+@media(max-width:800px){.sidebar{display:none}.main{padding:20px 14px}}
+.pg{display:none;animation:fadeUp .25s ease}
+.pg.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.pg-head{margin-bottom:28px}
+.pg-title{font-size:24px;font-weight:800;letter-spacing:-.4px;background:linear-gradient(135deg,var(--text),var(--acc2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.pg-desc{color:var(--muted);margin-top:6px;font-size:13px;line-height:1.65}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:14px;transition:border-color .2s}
+.card:hover{border-color:var(--bh)}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--acc2);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px}
+input[type=text],input[type=password],input[type=number],input[type=url],input[type=email],textarea,select{width:100%;background:var(--surf);border:1px solid var(--border);color:var(--text);border-radius:9px;padding:10px 13px;font-size:13px;font-family:var(--sans);transition:border-color .2s,box-shadow .2s;outline:none;appearance:none}
+input:focus,textarea:focus,select:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(124,107,255,.1)}
+textarea{resize:vertical;min-height:72px}
+select{cursor:pointer}
+select option{background:var(--surf)}
+.hint{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+.hint a{color:var(--acc2);text-decoration:none}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:600px){.g2,.g3{grid-template-columns:1fr}}
+.tog-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.tog-row:last-child{border:none;padding-bottom:0}
+.tog-info{flex:1;padding-right:16px}
+.tog-title{font-size:13px;font-weight:600}
+.tog-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.tog{position:relative;width:40px;height:22px;flex-shrink:0}
+.tog input{opacity:0;width:0;height:0}
+.tog .sl{position:absolute;inset:0;background:rgba(255,255,255,.1);border-radius:22px;cursor:pointer;transition:.2s}
+.tog .sl::before{content:'';position:absolute;width:16px;height:16px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.tog input:checked+.sl{background:var(--acc)}
+.tog input:checked+.sl::before{transform:translateX(18px)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--sans)}
+.btn-p{background:linear-gradient(135deg,var(--acc),#9c86ff);color:#fff}
+.btn-p:hover{opacity:.9;transform:translateY(-1px)}
+.btn-g{background:rgba(124,107,255,.1);color:var(--acc2);border:1px solid var(--border)}
+.btn-g:hover{background:rgba(124,107,255,.18);border-color:var(--acc)}
+.btn-d{background:rgba(255,107,107,.12);color:var(--err);border:1px solid rgba(255,107,107,.25)}
+.btn-d:hover{background:rgba(255,107,107,.22)}
+.btn-ok{background:rgba(77,255,176,.1);color:var(--ok);border:1px solid rgba(77,255,176,.25)}
+.btn-sm{padding:6px 12px;font-size:11px}
+.btn-lg{width:100%;padding:13px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700}
+.bg-ok{background:rgba(77,255,176,.1);color:var(--ok)}
+.bg-err{background:rgba(255,107,107,.1);color:var(--err)}
+.bg-warn{background:rgba(255,184,107,.1);color:var(--warn)}
+.bg-acc{background:rgba(124,107,255,.15);color:var(--acc2)}
+.alert{padding:11px 14px;border-radius:9px;font-size:12px;margin-bottom:14px;display:none;gap:8px;align-items:flex-start;line-height:1.5}
+.alert.on{display:flex}
+.a-ok{background:rgba(77,255,176,.07);border:1px solid rgba(77,255,176,.25);color:var(--ok)}
+.a-err{background:rgba(255,107,107,.07);border:1px solid rgba(255,107,107,.25);color:var(--err)}
+.a-info{background:rgba(124,107,255,.07);border:1px solid rgba(124,107,255,.25);color:var(--acc2)}
+.a-warn{background:rgba(255,184,107,.07);border:1px solid rgba(255,184,107,.25);color:var(--warn)}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{text-align:left;padding:9px 12px;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border)}
+.tbl td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:rgba(124,107,255,.03)}
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:14px}
+.plan-c{background:var(--surf);border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;transition:all .2s}
+.plan-c:hover{border-color:var(--acc);transform:translateY(-2px)}
+.plan-price{font-size:22px;font-weight:800}
+.plan-price span{font-size:12px;color:var(--muted);font-weight:500}
+.plan-name{font-size:13px;font-weight:600;margin:5px 0 2px}
+.plan-meta{font-size:11px;color:var(--muted)}
+.plan-del{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;opacity:.4}
+.plan-del:hover{color:var(--err);opacity:1}
+.srv-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:6px;flex-shrink:0}
+.sd-ok{background:var(--ok);box-shadow:0 0 5px var(--ok)}
+.sd-err{background:var(--err)}
+.sd-pend{background:var(--warn);animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.ifrm{background:var(--surf);border:1px dashed var(--border);border-radius:11px;padding:18px;margin-top:12px;display:none}
+.ifrm.open{display:block;animation:fadeUp .2s}
+.bot-bar{display:flex;align-items:center;gap:12px;padding:14px 18px;background:var(--surf);border:1px solid var(--border);border-radius:11px;margin-bottom:16px}
+.bot-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.bot-dot.on{background:var(--ok);box-shadow:0 0 7px var(--ok);animation:pulse 2s infinite}
+.bot-dot.off{background:var(--err)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.bot-txt{flex:1;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat-c{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px}
+.stat-val{font-size:26px;font-weight:800;color:var(--text)}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+#toasts{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--card);border:1px solid var(--border);padding:11px 16px;border-radius:9px;font-size:12px;max-width:300px;animation:fadeUp .3s;display:flex;align-items:center;gap:8px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+.toast.tok{border-color:rgba(77,255,176,.3)}
+.toast.terr{border-color:rgba(255,107,107,.3)}
+.wl-tags{display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow-y:auto;padding:4px 0}
+.wl-tag{background:rgba(124,107,255,.1);border:1px solid rgba(124,107,255,.2);color:var(--acc2);padding:3px 10px;border-radius:20px;font-size:11px;font-family:var(--mono)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:fadeUp .25s}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+.modal-close:hover{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="orb orb1"></div><div class="orb orb2"></div>
+<div id="toasts"></div>
+
+<div class="modal-bg" id="modal-promo">
+  <div class="modal">
+    <div class="modal-title">🎟 Новый промокод <button class="modal-close" onclick="closeModal('modal-promo')">&#10005;</button></div>
+    <div class="field"><label>Код *</label><input type="text" id="pm-code" placeholder="SUMMER25"></div>
+    <div class="g2">
+      <div class="field"><label>Скидка % *</label><input type="number" id="pm-discount" placeholder="20" min="1" max="100"></div>
+      <div class="field"><label>Лимит (0=бессрочно)</label><input type="number" id="pm-limit" placeholder="0"></div>
+    </div>
+    <div class="field"><label>Действует до</label><input type="date" id="pm-expires"></div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-p" onclick="createPromo()">Создать</button>
+      <button class="btn btn-g" onclick="closeModal('modal-promo')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="shell">
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-name">&#128737; KawaVPN</div>
+    <div class="brand-sub">Admin Panel v11</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Обзор</div>
+    <div class="nav-item active" onclick="go('dashboard')" id="n-dashboard"><span class="ni">&#128202;</span>Dashboard</div>
+    <div class="nav-section">Конфигурация</div>
+    <div class="nav-item" onclick="go('bot')" id="n-bot"><span class="ni">&#129302;</span>Бот</div>
+    <div class="nav-item" onclick="go('servers')" id="n-servers"><span class="ni">&#128421;</span>Серверы</div>
+    <div class="nav-item" onclick="go('plans')" id="n-plans"><span class="ni">&#128230;</span>Тарифы</div>
+    <div class="nav-item" onclick="go('payments')" id="n-payments"><span class="ni">&#128179;</span>Оплата</div>
+    <div class="nav-section">Пользователи</div>
+    <div class="nav-item" onclick="go('users')" id="n-users"><span class="ni">&#128100;</span>Пользователи</div>
+    <div class="nav-item" onclick="go('transactions')" id="n-transactions"><span class="ni">&#128176;</span>Транзакции</div>
+    <div class="nav-item" onclick="go('promos')" id="n-promos"><span class="ni">&#127967;</span>Промокоды</div>
+    <div class="nav-section">Инструменты</div>
+    <div class="nav-item" onclick="go('stats')" id="n-stats"><span class="ni">&#128200;</span>Статистика</div>
+    <div class="nav-item" onclick="go('sni')" id="n-sni"><span class="ni">&#128260;</span>SNI ротация</div>
+    <div class="nav-item" onclick="go('broadcast')" id="n-broadcast"><span class="ni">&#128226;</span>Рассылка</div>
+    <div class="nav-item" onclick="go('settings')" id="n-settings"><span class="ni">&#9881;</span>Настройки</div>
+    <div class="nav-item" onclick="go('backup')" id="n-backup"><span class="ni">&#128190;</span>Бэкап</div>
+    <div class="nav-item" onclick="go('support')" id="n-support"><span class="ni">&#128172;</span>Поддержка</div>
+  </nav>
+  <div class="sidebar-foot" id="sfoot">v11.0</div>
+</aside>
+
+<main class="main">
+
+<!-- DASHBOARD -->
+<div class="pg active" id="pg-dashboard">
+  <div class="pg-head"><div class="pg-title">&#128202; Dashboard</div><div class="pg-desc">Обзор ключевых метрик</div></div>
+  <div class="stat-row">
+    <div class="stat-c"><div class="stat-val" id="d-users">—</div><div class="stat-lbl">Пользователей</div></div>
+    <div class="stat-c"><div class="stat-val" id="d-active">—</div><div class="stat-lbl">Активных</div></div>
+    <div class="stat-c"><div class="stat-val" id="d-revenue">—</div><div class="stat-lbl">Выручка мес.</div></div>
+    <div class="stat-c"><div class="stat-val" id="d-servers">—</div><div class="stat-lbl">Серверов</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#129302; Статус бота</div>
+    <div class="bot-bar">
+      <div class="bot-dot off" id="dash-bot-dot"></div>
+      <div class="bot-txt" id="dash-bot-txt">Загрузка...</div>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-ok btn-sm" onclick="botCtl('start')">&#9654;</button>
+        <button class="btn btn-d btn-sm" onclick="botCtl('stop')">&#9635;</button>
+        <button class="btn btn-g btn-sm" onclick="botCtl('restart')">&#128260;</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128203; Последние транзакции</div>
+    <table class="tbl">
+      <thead><tr><th>Пользователь</th><th>Сумма</th><th>Тариф</th><th>Метод</th><th>Дата</th></tr></thead>
+      <tbody id="dash-payments"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- БОТ -->
+<div class="pg" id="pg-bot">
+  <div class="pg-head"><div class="pg-title">&#129302; Управление ботом</div><div class="pg-desc">Токен, администраторы, запуск и остановка</div></div>
+  <div id="al-bot" class="alert"></div>
+  <div class="card">
+    <div class="card-title">&#9889; Статус и управление</div>
+    <div class="bot-bar">
+      <div class="bot-dot off" id="bot-dot"></div>
+      <div class="bot-txt" id="bot-txt">Загрузка...</div>
+      <div style="display:flex;gap:7px">
+        <button class="btn btn-ok btn-sm" onclick="botCtl('start')">&#9654; Старт</button>
+        <button class="btn btn-d btn-sm" onclick="botCtl('stop')">&#9635; Стоп</button>
+        <button class="btn btn-g btn-sm" onclick="botCtl('restart')">&#128260; Рестарт</button>
+      </div>
+    </div>
+    <div id="bot-ctl-res" style="font-size:11px;font-family:var(--mono);color:var(--muted);display:none;margin-top:8px;padding:8px;background:var(--surf);border-radius:7px"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128273; Токен бота</div>
+    <div class="field"><label>BOT_TOKEN</label><input type="password" id="bot-token" placeholder="1234567890:AAXXXXXXX..."><div class="hint">Получить у <a href="https://t.me/BotFather" target="_blank">@BotFather</a> — /newbot</div></div>
+    <div class="field"><label>Admin Telegram IDs (через запятую)</label><input type="text" id="bot-admins" placeholder="123456789,987654321"><div class="hint">Узнать ID: <a href="https://t.me/userinfobot" target="_blank">@userinfobot</a></div></div>
+    <button class="btn btn-p" onclick="saveBotToken()">&#128190; Сохранить и перезапустить</button>
+    <div id="bot-tok-res" style="font-size:12px;margin-top:8px;display:none"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128081; Только администраторы</div>
+    <div class="field"><label>Telegram IDs (через запятую)</label><input type="text" id="bot-admins2" placeholder="123456789,987654321"></div>
+    <button class="btn btn-g" onclick="saveBotAdmins()">&#128190; Сохранить</button>
+    <div id="bot-adm-res" style="font-size:12px;margin-top:8px;display:none"></div>
+  </div>
+</div>
+
+<!-- СЕРВЕРЫ -->
+<div class="pg" id="pg-servers">
+  <div class="pg-head"><div class="pg-title">Xray ноды</div><div class="pg-desc">Автоустановка официального Xray-core и VLESS Reality на порту 443</div></div>
+  <div id="al-srv" class="alert"></div>
+  <div class="card" style="background:rgba(124,107,255,.05);border-style:dashed;padding:16px">
+    <div style="display:flex;gap:10px;align-items:flex-start;font-size:12px;color:var(--muted)">
+      <span style="font-size:20px">&#129302;</span>
+      <div><div style="color:var(--text);font-weight:600;margin-bottom:3px">Автоустановка</div>SSH → Xray-core → защищённый node-agent → VLESS Reality → проверка конфигурации</div>
+    </div>
+  </div>
+  <div id="srv-list" style="margin-top:14px"></div>
+  <button class="btn btn-g" onclick="toggleIfrm('srv-form','btn-add-srv','+ Добавить сервер')" id="btn-add-srv" style="width:100%;margin-bottom:14px">+ Добавить сервер</button>
+  <div class="ifrm" id="srv-form">
+    <div class="card-title" style="margin-bottom:16px">&#128421; Новый сервер</div>
+
+    <!-- Режим: уже установлен / нужна установка -->
+    <div style="display:flex;gap:0;margin-bottom:18px;border:1px solid var(--border);border-radius:10px;overflow:hidden">
+      <button id="sf-mode-ready" onclick="setSrvMode('ready')" style="flex:1;padding:10px;border:none;background:var(--acc);color:#fff;font-weight:700;cursor:pointer;font-size:13px;transition:.2s">
+         Подключить готовую ноду
+      </button>
+      <button id="sf-mode-ssh" onclick="setSrvMode('ssh')" style="flex:1;padding:10px;border:none;background:var(--card2,#1e1e2e);color:var(--muted);font-weight:600;cursor:pointer;font-size:13px;transition:.2s">
+        &#128421; Установить через SSH
+      </button>
+    </div>
+
+    <!-- Общие поля -->
+    <div class="field" style="margin-bottom:14px"><label>Название *</label><input type="text" id="sf-label" placeholder="&#127465;&#127466; Германия 1"></div>
+
+    <!-- РЕЖИМ: УЖЕ УСТАНОВЛЕН -->
+    <div id="sf-panel-ready">
+      <div style="background:rgba(0,230,118,.05);border:1px solid rgba(0,230,118,.2);border-radius:10px;padding:16px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--ok,#00e676);margin-bottom:12px;text-transform:uppercase;letter-spacing:.8px">Данные Xray node-agent</div>
+        <div class="field" style="margin-bottom:10px">
+          <label>URL ноды *</label>
+          <input type="text" id="sf-panel-url" placeholder="http://95.164.53.182:8090" style="font-family:var(--mono)">
+          <div class="hint" style="margin-top:4px">Пример: http://IP:8090</div>
+        </div>
+        <div class="g2">
+          <div class="field" style="display:none"><label>Логин</label><input type="text" id="sf-node-user"></div>
+          <div class="field"><label>Bearer token *</label><input type="password" id="sf-node-pass"></div>
+        </div>
+        <div class="field" style="margin-top:10px"><label>CA/server certificate (если HTTPS self-signed)</label><textarea id="sf-node-cert" rows="3" placeholder="-----BEGIN CERTIFICATE-----"></textarea></div>
+          <div class="hint">Панель проверит health node-agent и получит список Xray инбаундов. SSH не нужен.</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-p btn-sm" onclick="addServerReady()">&#10003; Подключить панель</button>
+        <button class="btn btn-g btn-sm" onclick="toggleIfrm('srv-form','btn-add-srv','+ Добавить сервер')">Отмена</button>
+      </div>
+    </div>
+
+    <!-- РЕЖИМ: УСТАНОВИТЬ ЧЕРЕЗ SSH -->
+    <div id="sf-panel-ssh" style="display:none">
+      <div class="g2">
+        <div class="field"><label>IP / Хост *</label><input type="text" id="sf-host" placeholder="1.2.3.4"></div>
+        <div class="field"><label>SSH порт</label><input type="number" id="sf-port" value="22"></div>
+      </div>
+      <div class="g2">
+        <div class="field"><label>SSH пользователь</label><input type="text" id="sf-user" value="root"></div>
+        <div class="field"><label>SSH пароль</label><input type="password" id="sf-pass"></div>
+      </div>
+      <div class="field"><label>SSH ключ (вместо пароля)</label><textarea id="sf-key" rows="2" placeholder="-----BEGIN RSA PRIVATE KEY-----"></textarea></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-p btn-sm" onclick="addServer()">&#128640; Добавить и установить</button>
+        <button class="btn btn-g btn-sm" onclick="toggleIfrm('srv-form','btn-add-srv','+ Добавить сервер')">Отмена</button>
+      </div>
+    </div>
+
+    <div id="sf-res" style="font-size:12px;margin-top:10px;display:none"></div>
+  </div>
+</div>
+
+<!-- ТАРИФЫ -->
+<div class="pg" id="pg-plans">
+  <div class="pg-head"><div class="pg-title">&#128230; Тарифы</div><div class="pg-desc">Создавайте и управляйте тарифными планами</div></div>
+  <div id="plans-grid" class="plans-grid"></div>
+  <button class="btn btn-g" onclick="toggleIfrm('plan-form','btn-add-plan','+ Добавить тариф');_buildPlanServerCheckboxes()" id="btn-add-plan" style="width:100%;margin-bottom:14px">+ Добавить тариф</button>
+  <div class="ifrm" id="plan-form">
+    <div class="card-title" style="margin-bottom:14px">&#128230; Новый тариф</div>
+    <div class="g2">
+      <div class="field"><label>Название *</label><input type="text" id="pf-name" placeholder="Месяц"></div>
+      <div class="field"><label>Цена &#8381; *</label><input type="number" id="pf-price" placeholder="299"></div>
+    </div>
+    <div class="g3">
+      <div class="field"><label>Дней *</label><input type="number" id="pf-days" placeholder="30"></div>
+      <div class="field"><label>Трафик ГБ (0=&#8734;)</label><input type="number" id="pf-traffic" value="0"></div>
+      <div class="field"><label>Сортировка</label><input type="number" id="pf-sort" value="0"></div>
+    </div>
+    <div class="field"><label>Описание</label><input type="text" id="pf-desc" placeholder="Идеально для начала"></div>
+    <div class="field">
+      <label>Серверы <span style="opacity:.5;font-size:11px">(пусто = все серверы)</span></label>
+      <div id="pf-servers" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-p btn-sm" onclick="addPlan()">&#10003; Добавить</button>
+      <button class="btn btn-g btn-sm" onclick="toggleIfrm('plan-form','btn-add-plan','+ Добавить тариф')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- ОПЛАТА -->
+<div class="pg" id="pg-payments">
+  <div class="pg-head"><div class="pg-title">&#128179; Платёжные системы</div><div class="pg-desc">Настройка методов оплаты. Изменения применяются мгновенно.</div></div>
+  <div class="card">
+    <div class="card-title">&#11088; Telegram Stars</div>
+    <div class="tog-row"><div class="tog-info"><div class="tog-title">Telegram Stars</div><div class="tog-desc">Встроенная оплата. Работает сразу, настройка не нужна.</div></div><label class="tog"><input type="checkbox" checked disabled><span class="sl"></span></label></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#127183; Ручная оплата (перевод)</div>
+    <div class="tog-row"><div class="tog-info"><div class="tog-title">Включить</div><div class="tog-desc">Пользователь переводит, вы подтверждаете вручную</div></div><label class="tog"><input type="checkbox" id="pay-manual" onchange="saveSetting('manual_payment_enabled',this.checked)"><span class="sl"></span></label></div>
+    <div style="margin-top:14px">
+      <div class="field"><label>Ссылка для перевода</label><input type="url" id="pay-card-url" placeholder="https://t.me/send?start=..." onblur="saveSetting('card_link_url',this.value)"></div>
+      <div class="field"><label>Текст кнопки</label><input type="text" id="pay-card-text" value="&#128179; Перевести на карту" onblur="saveSetting('card_link_text',this.value)"></div>
+      <div class="field"><label>Инструкция для пользователя</label><textarea id="pay-manual-text" rows="3" onblur="saveSetting('manual_payment_text',this.value)"></textarea></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128279; Heleket (крипто)</div>
+    <div class="tog-row"><div class="tog-info"><div class="tog-title">Heleket</div><div class="tog-desc">USDT, BTC, ETH и другие</div></div><label class="tog"><input type="checkbox" id="pay-heleket" onchange="saveSetting('heleket_enabled',this.checked)"><span class="sl"></span></label></div>
+    <div class="g2" style="margin-top:14px">
+      <div class="field"><label>API Key</label><input type="password" id="pay-hel-key" placeholder="sk_live_..."></div>
+      <div class="field"><label>Merchant ID</label><input type="text" id="pay-hel-mid"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#129689; CryptoPay (@CryptoBot)</div>
+    <div class="tog-row"><div class="tog-info"><div class="tog-title">CryptoPay</div><div class="tog-desc">Официальный Telegram крипто-бот</div></div><label class="tog"><input type="checkbox" id="pay-crypto" onchange="saveSetting('cryptopay_enabled',this.checked)"><span class="sl"></span></label></div>
+    <div class="field" style="margin-top:14px"><label>API Token</label><input type="password" id="pay-crypto-token" placeholder="Токен из @CryptoBot"></div>
+  </div>
+</div>
+
+<!-- ПОЛЬЗОВАТЕЛИ -->
+<div class="pg" id="pg-users">
+  <div class="pg-head"><div class="pg-title">&#128100; Пользователи</div><div class="pg-desc">Управление аккаунтами клиентов</div></div>
+  <div style="display:flex;gap:10px;margin-bottom:14px">
+    <input type="text" id="usr-search" placeholder="&#128269; Поиск по имени, username, ID..." oninput="loadUsers()" style="flex:1">
+    <select id="usr-filter" onchange="loadUsers()" style="width:160px">
+      <option value="">Все</option><option value="active">Активные</option><option value="expired">Истёкшие</option><option value="banned">Забаненные</option>
+    </select>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl">
+      <thead><tr><th>Пользователь</th><th>Статус</th><th>Баланс</th><th>Подписка до</th><th>Регистрация</th><th></th></tr></thead>
+      <tbody id="users-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ТРАНЗАКЦИИ -->
+<div class="pg" id="pg-transactions">
+  <div class="pg-head"><div class="pg-title">&#128176; Транзакции</div><div class="pg-desc">История всех платежей</div></div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl">
+      <thead><tr><th>Дата</th><th>Пользователь</th><th>Сумма</th><th>Метод</th><th>Тариф</th><th>Статус</th></tr></thead>
+      <tbody id="payments-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ПРОМОКОДЫ -->
+<div class="pg" id="pg-promos">
+  <div class="pg-head"><div class="pg-title">&#127967; Промокоды</div></div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <button class="btn btn-p" onclick="openModal('modal-promo')">+ Создать промокод</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl">
+      <thead><tr><th>Код</th><th>Скидка</th><th>Использований</th><th>Лимит</th><th>До</th><th>Статус</th><th></th></tr></thead>
+      <tbody id="promos-tbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- СТАТИСТИКА -->
+<div class="pg" id="pg-stats">
+  <div class="pg-head"><div class="pg-title">&#128200; Статистика</div></div>
+  <div class="stat-row">
+    <div class="stat-c"><div class="stat-val" id="st-conv">—</div><div class="stat-lbl">Конверсия</div></div>
+    <div class="stat-c"><div class="stat-val" id="st-ret">—</div><div class="stat-lbl">Удержание</div></div>
+    <div class="stat-c"><div class="stat-val" id="st-paid">—</div><div class="stat-lbl">Платящих</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128176; Выручка по дням</div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <select id="rev-period" onchange="loadStats()" style="width:120px"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select>
+    </div>
+    <canvas id="chart-rev" height="70"></canvas>
+  </div>
+  <div class="card"><div class="card-title">&#128100; Новые пользователи</div><canvas id="chart-usr" height="70"></canvas></div>
+  <div class="card"><div class="card-title">&#127942; Топ по трафику</div>
+    <table class="tbl"><thead><tr><th>#</th><th>Пользователь</th><th>Трафик ГБ</th></tr></thead><tbody id="top-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- SNI -->
+<div class="pg" id="pg-sni">
+  <div class="pg-head"><div class="pg-title">&#128260; SNI Ротация</div><div class="pg-desc">Автоматическая смена SNI домена для обхода блокировок</div></div>
+  <div class="card">
+    <div class="card-title">&#128203; Whitelist доменов</div>
+    <div id="sni-wl" class="wl-tags">Загрузка...</div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <input type="text" id="sni-new" placeholder="example.com" style="flex:1">
+      <button class="btn btn-p btn-sm" onclick="addWlDomain()">+ Добавить</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128220; Лог ротаций</div>
+    <table class="tbl">
+      <thead><tr><th>Сервер</th><th>Старый SNI</th><th>Новый SNI</th><th>Причина</th><th>Время</th></tr></thead>
+      <tbody id="sni-log"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- РАССЫЛКА -->
+<div class="pg" id="pg-broadcast">
+  <div class="pg-head"><div class="pg-title">&#128226; Рассылка</div><div class="pg-desc">Отправка сообщений пользователям</div></div>
+  <div class="card">
+    <div class="card-title">&#9993; Новая рассылка</div>
+    <div class="g2">
+      <div class="field"><label>Аудитория</label><select id="bc-target"><option value="all">&#128101; Все</option><option value="active">&#10003; Активные</option></select></div>
+      <div class="field"><label>Тип</label><select id="bc-type" onchange="bcTypeChange()"><option value="text">&#128221; Текст</option><option value="photo">&#128444; Фото</option></select></div>
+    </div>
+    <div class="field"><label>Текст (HTML: &lt;b&gt;, &lt;i&gt;, &lt;code&gt;)</label><textarea id="bc-text" rows="5" placeholder="Текст рассылки..."></textarea></div>
+    <div id="bc-file-wrap" style="display:none" class="field"><label>File ID</label><input type="text" id="bc-file-id"></div>
+    <div class="g2">
+      <div class="field"><label>Кнопка: текст</label><input type="text" id="bc-btn-text" placeholder="Подробнее"></div>
+      <div class="field"><label>Кнопка: ссылка</label><input type="url" id="bc-btn-url" placeholder="https://..."></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn btn-p" onclick="sendBroadcast()">&#128228; Отправить</button>
+      <button class="btn btn-g" onclick="previewBc()">&#128065; Предпросмотр</button>
+    </div>
+    <div id="bc-res" style="margin-top:10px;font-size:12px;display:none"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128220; История</div>
+    <table class="tbl">
+      <thead><tr><th>Дата</th><th>Тип</th><th>Аудитория</th><th>Отправлено</th><th>Ошибок</th></tr></thead>
+      <tbody id="bc-hist"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- НАСТРОЙКИ -->
+<div class="pg" id="pg-settings">
+  <div class="pg-head"><div class="pg-title">&#9881; Настройки бота</div><div class="pg-desc">Тексты, функции и конфигурация. Изменения сохраняются автоматически.</div></div>
+  <div class="card">
+    <div class="card-title">&#128172; Тексты бота</div>
+    <div class="field"><label>Приветствие /start (переменная {name})</label><textarea id="set-welcome" rows="3" onblur="saveSetting('welcome_text',this.value)"></textarea></div>
+    <div class="field"><label>Сообщение после выдачи подписки</label><textarea id="set-sub-issued" rows="3" onblur="saveSetting('sub_issued_text',this.value)"></textarea></div>
+    <div class="field"><label>Username поддержки (без @)</label><input type="text" id="set-support" placeholder="your_support" onblur="saveSetting('support_username',this.value)"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#127873; Пробный период</div>
+    <div class="tog-row"><div class="tog-info"><div class="tog-title">Включить</div><div class="tog-desc">Бесплатный VPN для новых пользователей</div></div><label class="tog"><input type="checkbox" id="set-trial" onchange="saveSetting('trial_enabled',this.checked)"><span class="sl"></span></label></div>
+    <div class="g2" style="margin-top:12px">
+      <div class="field"><label>Дней</label><input type="number" id="set-trial-days" min="1" onblur="saveSetting('trial_days',+this.value)"></div>
+      <div class="field"><label>Трафик ГБ (0=&#8734;)</label><input type="number" id="set-trial-traffic" min="0" onblur="saveSetting('trial_traffic_gb',+this.value)"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#129309; Реферальная программа</div>
+    <div class="tog-row"><div class="tog-info"><div class="tog-title">Включить</div><div class="tog-desc">Дни за приглашённых друзей</div></div><label class="tog"><input type="checkbox" id="set-ref" onchange="saveSetting('referral_enabled',this.checked)"><span class="sl"></span></label></div>
+    <div class="field" style="margin-top:12px"><label>Дней за реферала</label><input type="number" id="set-ref-days" min="1" onblur="saveSetting('referral_days_reward',+this.value)"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">&#127760; Системные настройки</div>
+    <div class="field"><label>BOT_DOMAIN</label><input type="url" id="set-domain" placeholder="https://yourdomain.com"></div>
+    <div class="field"><label>Канал статусов</label><input type="text" id="set-status-ch" placeholder="@channel или -1001..."></div>
+    <div class="field"><label>Чат поддержки</label><input type="text" id="set-support-ch" placeholder="-1001234567890"></div>
+    <div class="field">
+      <label>Google Client ID <span style="font-size:10px;color:var(--muted)">(для входа через Google на сайте)</span></label>
+      <input type="text" id="set-google-cid" placeholder="12345-xxx.apps.googleusercontent.com">
+      <p style="font-size:11px;color:var(--muted);margin-top:4px">Получить: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--acc)">console.cloud.google.com → Credentials → OAuth 2.0</a></p>
+    </div>
+    <button class="btn btn-p btn-sm" onclick="saveSystemSettings()" style="margin-top:4px">&#128190; Сохранить системные</button>
+  </div>
+</div>
+
+<!-- БЭКАП -->
+<div class="pg" id="pg-backup">
+  <div class="pg-head"><div class="pg-title">&#128190; Резервные копии</div><div class="pg-desc">Автобэкап ежедневно в 03:00. Хранятся последние 7 копий.</div></div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+    <button class="btn btn-p" onclick="createBackup()">+ Создать бэкап</button>
+  </div>
+  <div id="al-bak" class="alert"></div>
+  <div class="card">
+    <div class="card-title">&#128203; Список бэкапов</div>
+    <table class="tbl"><thead><tr><th>Файл</th><th>Размер</th><th>Дата</th><th></th></tr></thead>
+    <tbody id="backup-tbody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Загрузка...</td></tr></tbody></table>
+  </div>
+  <div class="card">
+    <div class="card-title">&#128228; Восстановить из файла</div>
+    <div class="field"><label>SQL файл бэкапа</label><input type="file" id="bak-file" accept=".sql,.gz" style="padding:8px"></div>
+    <button class="btn btn-d" onclick="restoreBackup()" style="margin-top:4px">&#9888; Восстановить (перезапишет данные!)</button>
+  </div>
+</div>
+
+
+<!-- ПОДДЕРЖКА -->
+<div class="pg" id="pg-support">
+  <div class="pg-head"><div class="pg-title">&#128172; Поддержка</div><div class="pg-desc">Тикеты пользователей</div></div>
+  <div class="stat-row" style="margin-bottom:16px">
+    <div class="stat-c" id="sup-open-c"><div class="stat-val" id="sup-open">—</div><div class="stat-lbl">Открытых</div></div>
+    <div class="stat-c"><div class="stat-val" id="sup-answered">—</div><div class="stat-lbl">Отвечено</div></div>
+    <div class="stat-c"><div class="stat-val" id="sup-closed">—</div><div class="stat-lbl">Закрытых</div></div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">
+    <select id="sup-filter" onchange="loadSupport()" style="width:180px">
+      <option value="all">Все тикеты</option>
+      <option value="open" selected>Открытые</option>
+      <option value="answered">Отвечено</option>
+      <option value="closed">Закрытые</option>
+    </select>
+    <button class="btn btn-p btn-sm" onclick="loadSupport()">&#8635; Обновить</button>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table class="tbl">
+      <thead><tr><th style="width:40px">#</th><th>Пользователь</th><th>Сообщение</th><th>Статус</th><th>Дата</th><th></th></tr></thead>
+      <tbody id="support-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div class="modal-wrap" id="modal-user-detail" style="display:none" onclick="if(event.target===this)closeModal('modal-user-detail')">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-head"><span id="udet-title">Пользователь</span><button class="modal-close" onclick="closeModal('modal-user-detail')">&#10005;</button></div>
+    <div style="padding:18px 20px 8px">
+      <div class="stat-row" style="margin-bottom:16px">
+        <div class="stat-c"><div class="stat-val" id="udet-balance">—</div><div class="stat-lbl">Баланс ₽</div></div>
+        <div class="stat-c"><div class="stat-val" id="udet-status">—</div><div class="stat-lbl">Статус</div></div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-title">&#128176; Управление балансом</div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <input type="number" id="udet-amount" placeholder="Сумма ₽" style="width:120px" min="1">
+          <input type="text" id="udet-comment" placeholder="Комментарий" style="flex:1;min-width:120px">
+          <button class="btn btn-ok btn-sm" onclick="changeBalance(1)">&#43; Пополнить</button>
+          <button class="btn btn-d btn-sm" onclick="changeBalance(-1)">&#8722; Списать</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">&#128203; История баланса</div>
+        <div id="udet-log" style="max-height:200px;overflow-y:auto;margin-top:8px;font-size:12px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUPPORT REPLY MODAL -->
+<div class="modal-wrap" id="modal-ticket-reply" style="display:none" onclick="if(event.target===this)closeModal('modal-ticket-reply')">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-head"><span id="ticket-reply-title">Ответ на тикет</span><button class="modal-close" onclick="closeModal('modal-ticket-reply')">&#10005;</button></div>
+    <div style="padding:18px 20px">
+      <div class="card" style="margin-bottom:14px;background:var(--bg3);border:1px solid var(--brd)">
+        <div class="card-title" style="color:var(--muted)">Сообщение пользователя</div>
+        <div id="ticket-original-text" style="font-size:13px;margin-top:6px;white-space:pre-wrap"></div>
+      </div>
+      <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">Ваш ответ</label>
+      <textarea id="ticket-answer" rows="5" style="width:100%;box-sizing:border-box" placeholder="Введите ответ..."></textarea>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+        <button class="btn" onclick="closeModal('modal-ticket-reply')">Отмена</button>
+        <button class="btn btn-p" onclick="sendTicketReply()">&#9992; Отправить</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const PAGE_LOADERS={dashboard:loadDashboard,bot:loadBotStatus,servers:loadServers,plans:loadPlans,payments:loadPaySettings,users:loadUsers,transactions:loadTransactions,promos:loadPromos,stats:loadStats,sni:loadSni,broadcast:loadBcHistory,settings:loadSettings,backup:loadBackups,support:loadSupport};
+
+function go(name){
+  document.querySelectorAll('.pg').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('pg-'+name);if(pg)pg.classList.add('active');
+  const ni=document.getElementById('n-'+name);if(ni)ni.classList.add('active');
+  if(PAGE_LOADERS[name])PAGE_LOADERS[name]();
+}
+
+window.__ADMIN_B64__ = null;
+
+async function api(method,url,body){
+  const h={'Content-Type':'application/json'};
+  if(window.__ADMIN_B64__)h['Authorization']='Basic '+window.__ADMIN_B64__;
+  const opts={method,headers:h};
+  if(body!==undefined)opts.body=JSON.stringify(body);
+  try{const r=await fetch(url,opts);if(r.status===401){location.reload();return null;}const d=await r.json();if(!r.ok)return{ok:false,detail:d.detail||'Ошибка '+r.status};return d;}catch(e){return null;}
+}
+
+async function saveSetting(key,val){
+  const p={};p[key]=val;
+  const r=await api('PATCH','/api/settings',p);
+  toast(r&&r.ok!==false?'Сохранено':'Ошибка сохранения',r&&r.ok!==false);
+}
+
+function toast(msg,ok=true){
+  const t=document.createElement('div');
+  t.className='toast '+(ok?'tok':'terr');
+  t.innerHTML=(ok?'&#10003;':'&#10007;')+' <span>'+msg+'</span>';
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+function showAlert(id,msg,type){
+  const el=document.getElementById(id);if(!el)return;
+  el.className='alert a-'+type+' on';
+  el.innerHTML=(type==='ok'?'&#10003;':type==='err'?'&#10007;':type==='warn'?'&#9888;':'&#8505;')+' <span>'+msg+'</span>';
+}
+
+function fmtDate(dt){if(!dt)return '—';const d=new Date(dt);return d.toLocaleDateString('ru')+' '+d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'});}
+function setVal(id,val){const el=document.getElementById(id);if(el&&val!=null)el.value=val;}
+function setChk(id,val){const el=document.getElementById(id);if(el&&val!=null)el.checked=!!val;}
+function setTxt(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+
+function toggleIfrm(fid,bid,closedText){
+  const f=document.getElementById(fid);f.classList.toggle('open');
+  const b=document.getElementById(bid);if(b)b.textContent=f.classList.contains('open')?'&#10005; Отмена':closedText;
+}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+// DASHBOARD
+async function loadDashboard(){
+  const[stats,pay,botSt]=await Promise.all([api('GET','/api/stats/dashboard'),api('GET','/api/payments'),api('GET','/api/bot/status')]);
+  if(stats){setTxt('d-users',stats.total_users??'—');setTxt('d-active',stats.active_subscriptions??'—');setTxt('d-revenue',(stats.total_revenue_month??0)+'&#8381;');setTxt('d-servers',stats.servers_count??'—');}
+  if(pay&&pay.items){document.getElementById('dash-payments').innerHTML=pay.items.slice(0,5).map(p=>`<tr><td>${p.user_name||p.user_id}</td><td style="color:var(--ok)">${p.amount}&#8381;</td><td>${p.plan_name||'—'}</td><td>${p.method||'—'}</td><td style="color:var(--muted)">${fmtDate(p.created_at)}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Нет данных</td></tr>';}
+  updBotUI(botSt);
+}
+
+function updBotUI(d){
+  if(!d)return;
+  ['bot-dot','dash-bot-dot'].forEach(id=>{const el=document.getElementById(id);if(el)el.className='bot-dot '+(d.running?'on':'off');});
+  ['bot-txt','dash-bot-txt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=d.running?'● RUNNING — бот работает':'○ STOPPED'+(d.token_set?'':' — токен не задан');});
+}
+
+async function loadBotStatus(){const d=await api('GET','/api/bot/status');updBotUI(d);}
+
+async function botCtl(action){
+  const res=document.getElementById('bot-ctl-res');
+  if(res){res.style.display='block';res.style.color='var(--muted)';res.textContent='⏳ '+action+'...';}
+  const d=await api('POST','/api/bot/'+action);
+  if(res)res.textContent=d?.output||(d?.ok?'OK':'Ошибка');
+  toast(d?.ok?'Бот: '+action:'Ошибка',d?.ok);
+  setTimeout(loadBotStatus,2000);
+}
+
+async function saveBotToken(){
+  const token=document.getElementById('bot-token').value.trim();
+  const admins=document.getElementById('bot-admins').value.trim();
+  if(!token){toast('Введите токен',false);return;}
+  const res=document.getElementById('bot-tok-res');
+  res.style.display='block';res.style.color='var(--muted)';res.textContent='⏳ Сохраняю...';
+  const d=await api('POST','/api/bot/token',{bot_token:token,admin_ids:admins});
+  res.textContent=d?.ok?'&#10003; Сохранено! '+(d.output||''):'&#10007; '+(d?.detail||'Ошибка');
+  res.style.color=d?.ok?'var(--ok)':'var(--err)';
+  if(d?.ok)setTimeout(loadBotStatus,2500);
+}
+
+async function saveBotAdmins(){
+  const ids=document.getElementById('bot-admins2').value.trim();
+  const res=document.getElementById('bot-adm-res');res.style.display='block';res.textContent='⏳...';
+  const d=await api('POST','/api/bot/admins',{admin_ids:ids});
+  res.textContent=d?.ok?'&#10003; Сохранено':'&#10007; Ошибка';res.style.color=d?.ok?'var(--ok)':'var(--err)';
+}
+
+// SERVERS
+let _servers=[];
+async function loadServers(){
+  _servers=await api('GET','/api/servers')||[];
+  renderServers();
+  _buildPlanServerCheckboxes();
+}
+
+function renderServers(){
+  const el=document.getElementById('srv-list');
+  if(!_servers.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px;background:var(--card);border-radius:12px;margin-bottom:14px">Серверов нет</div>';return;}
+  el.innerHTML='<div class="card" style="padding:0;overflow:hidden;margin-bottom:14px"><table class="tbl"><thead><tr><th>Сервер</th><th>Тип</th><th>Статус</th><th>Node API</th><th>IP</th><th></th></tr></thead><tbody>'+
+    _servers.map(s=>{
+      const st=s.install_status||'ready';
+      const dc=st==='ready'?'sd-ok':st==='error'?'sd-err':'sd-pend';
+      const logTxt=encodeURIComponent(s.install_log||'Нет лога');const sb=st==='ready'?'<span class="badge bg-ok">&#10003; Готов</span>':st==='error'?`<span class="badge bg-err" style="cursor:pointer" title="Нажмите чтобы посмотреть лог" onclick="showSrvLog(${s.id},decodeURIComponent('${logTxt}'))">&#10007; Ошибка</span>`:'<span class="badge bg-warn">&#9203; Установка...</span>';
+      const tp='<span class="badge bg-acc">Xray</span>';
+      const cr=s.node_url?`<span style="font-family:var(--mono);font-size:10px;color:var(--muted)">${s.node_url}</span>`:'<span style="color:var(--muted2)">—</span>';
+      const reinstallBtn=st==='error'||st==='pending'?`<button class="btn btn-a btn-sm" onclick="reinstallServer(${s.id},'${s.label}')" title="Переустановить">&#9881;</button>`:'';return`<tr><td><span class="srv-dot ${dc}"></span><strong>${s.flag||'&#127760;'} ${s.label}</strong></td><td>${tp}</td><td>${sb}</td><td>${cr}</td><td style="font-family:var(--mono);font-size:10px;color:var(--muted)">${s.ssh_host||s.node_url||'—'}</td><td style="display:flex;gap:5px">${reinstallBtn}<button class="btn btn-g btn-sm" onclick="pingServer(${s.id})">&#128269;</button><button class="btn btn-d btn-sm" onclick="deleteServer(${s.id})">&#128465;</button></td></tr>`;
+    }).join('')+'</tbody></table></div>';
+}
+
+function setSrvMode(mode){
+  const isReady=mode==='ready';
+  document.getElementById('sf-panel-ready').style.display=isReady?'block':'none';
+  document.getElementById('sf-panel-ssh').style.display=isReady?'none':'block';
+  document.getElementById('sf-mode-ready').style.background=isReady?'var(--acc)':'var(--card2,#1e1e2e)';
+  document.getElementById('sf-mode-ready').style.color=isReady?'#fff':'var(--muted)';
+  document.getElementById('sf-mode-ssh').style.background=isReady?'var(--card2,#1e1e2e)':'var(--acc)';
+  document.getElementById('sf-mode-ssh').style.color=isReady?'var(--muted)':'#fff';
+}
+
+async function addServerReady(){
+  const label=document.getElementById('sf-label').value.trim();
+  const panelUrl=document.getElementById('sf-panel-url').value.trim();
+  const nodeUser=document.getElementById('sf-node-user').value.trim();
+  const nodePass=document.getElementById('sf-node-pass').value.trim();
+  if(!label){toast('Введите название сервера',false);return;}
+  if(!panelUrl){toast('Введите URL ноды',false);return;}
+   if(!nodePass){toast('Введите Bearer token',false);return;}
+  // Extract host from panel URL
+  let host='';
+  try{const u=new URL(panelUrl);host=u.hostname;}catch(e){host=panelUrl.replace(/^https?:\/\//,'').split(':')[0].split('/')[0];}
+  const res=document.getElementById('sf-res');
+  res.style.display='block';res.style.color='var(--muted)';res.textContent='&#9203; Подключаюсь к панели...';
+  const btns=document.querySelectorAll('#sf-panel-ready .btn-p');btns.forEach(b=>{b.disabled=true;});
+  const payload={label,ssh_host:host,ssh_port:22,ssh_user:'root',ssh_password:null,ssh_key:null,flag:'&#127760;',
+    node_token:nodePass,node_cert:document.getElementById('sf-node-cert').value.trim()||null,node_url_override:panelUrl,
+    skip_ssh:true};
+  const r=await api('POST','/api/servers/provision-ready',payload);
+  if(r&&r.ok!==false){
+    toast('&#10003; Панель подключена!');
+    toggleIfrm('srv-form','btn-add-srv','+ Добавить сервер');
+    res.style.display='none';
+    loadServers();
+  } else {
+    res.style.color='var(--err)';
+    res.textContent='&#10007; '+(r?.detail||'Ошибка подключения');
+  }
+  btns.forEach(b=>{b.disabled=false;});
+}
+
+async function addServer(){
+  const label=document.getElementById('sf-label').value.trim();
+  const host=document.getElementById('sf-host').value.trim();
+  const pass=document.getElementById('sf-pass').value.trim();
+  const key=document.getElementById('sf-key').value.trim();
+  if(!label||!host){toast('Заполните название и IP',false);return;}
+  if(!pass&&!key){toast('Нужен SSH пароль или ключ',false);return;}
+  const payload={label,ssh_host:host,ssh_port:parseInt(document.getElementById('sf-port').value)||22,ssh_user:document.getElementById('sf-user').value||'root',ssh_password:pass||null,ssh_key:key||null,flag:'&#127760;'};
+  const btn=document.querySelector('#sf-panel-ssh .btn-p');btn.disabled=true;btn.textContent='&#9203; Добавляю...';
+  const res=document.getElementById('sf-res');res.style.display='block';res.style.color='var(--muted)';res.textContent='&#9203; Подключаюсь по SSH...';
+  const r=await api('POST','/api/servers/provision',payload);
+  if(r&&r.ok!==false){toast('Сервер добавлен! Установка в фоне...');toggleIfrm('srv-form','btn-add-srv','+ Добавить сервер');res.style.display='none';loadServers();if(r.server_id)pollSrvStatus(r.server_id,label);}
+  else{res.style.color='var(--err)';res.textContent='&#10007; '+(r?.detail||'Ошибка');}
+  btn.disabled=false;btn.textContent='&#128640; Добавить и установить';
+}
+
+function pollSrvStatus(id,label){
+  const iv=setInterval(async()=>{
+    const r=await api('GET',`/api/servers/${id}/install-status`);
+    if(r?.status==='ready'){clearInterval(iv);toast(`&#10003; ${label}: Xray node готов`);loadServers();}
+    else if(r?.status==='error'){clearInterval(iv);toast(`&#10007; Ошибка установки ${label}`,false);loadServers();}
+  },5000);
+  setTimeout(()=>clearInterval(iv),600000);
+}
+
+async function pingServer(id){toast('&#128269; Пингую...');const r=await api('POST',`/api/servers/${id}/ping`);toast(r?.online?`&#10003; Онлайн (${r.latency}ms)`:'&#10007; Недоступен',r?.online);}
+async function deleteServer(id){if(!confirm('Удалить сервер?'))return;await api('DELETE',`/api/servers/${id}`);toast('Удалён');loadServers();}
+
+function showSrvLog(id,log){
+  const msg=log||'Нет лога ошибки';
+  const existing=document.getElementById('srv-log-modal');
+  if(existing)existing.remove();
+  const m=document.createElement('div');
+  m.id='srv-log-modal';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  m.innerHTML=`<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:600px;width:90%;max-height:80vh;overflow:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <strong style="color:var(--err)">&#10007; Лог ошибки установки сервера #${id}</strong>
+      <button class="btn btn-g btn-sm" onclick="document.getElementById('srv-log-modal').remove()">&#10005;</button>
+    </div>
+    <pre style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:11px;font-family:var(--mono);white-space:pre-wrap;color:var(--err2,#ff8a8a);margin:0">${msg.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+    <div style="margin-top:14px;padding:12px;background:rgba(124,107,255,.07);border:1px solid var(--border);border-radius:8px">
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px">&#9881; Настроить вручную (если SSH не нужен)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input id="ml-user-${id}" placeholder="Логин панели (admin)" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px">
+        <input id="ml-pass-${id}" type="password" placeholder="Пароль панели" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px">
+        <input id="ml-url-${id}" placeholder="URL ноды (http://IP:8090)" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 10px;font-size:12px;grid-column:1/-1">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-p btn-sm" onclick="setManual(${id})">&#10003; Сохранить и пометить готовым</button>
+        <button class="btn btn-a btn-sm" onclick="reinstallServer(${id},'Сервер');document.getElementById('srv-log-modal').remove()">&#9881; Переустановить через SSH</button>
+        <button class="btn btn-g btn-sm" onclick="document.getElementById('srv-log-modal').remove()">Закрыть</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+async function setManual(id){
+  const u=document.getElementById('ml-user-'+id)?.value.trim();
+  const p=document.getElementById('ml-pass-'+id)?.value.trim();
+  const url=document.getElementById('ml-url-'+id)?.value.trim();
+  const r=await api('POST',`/api/servers/${id}/set-manual`,{node_token:p||undefined,node_url:url||undefined});
+  if(r&&r.ok!==false){toast('&#10003; Сервер помечен как готовый');document.getElementById('srv-log-modal')?.remove();loadServers();}
+  else toast('&#10007; '+(r?.detail||'Ошибка'),false);
+}
+
+async function reinstallServer(id,label){
+  if(!confirm('Запустить переустановку сервера '+label+'?'))return;
+  const r=await api('POST',`/api/servers/${id}/reinstall`);
+  if(r&&r.ok!==false){toast('&#9881; Переустановка запущена...');loadServers();pollSrvStatus(id,label);}
+  else toast('&#10007; '+(r?.detail||'Ошибка'),false);
+}
+
+// PLANS
+let _plans=[];
+async function loadPlans(){_plans=await api('GET','/api/plans')||[];renderPlans();}
+function renderPlans(){
+  const el=document.getElementById('plans-grid');
+  if(!_plans.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:24px;background:var(--card);border-radius:12px;margin-bottom:14px">Тарифов нет</div>';return;}
+  // Серверы для отображения в карточках тарифов
+  const srvMap = {};
+  (_servers||[]).forEach(s => srvMap[s.id] = (s.flag||'🌍')+' '+s.label);
+  el.innerHTML=_plans.map(p=>{
+    const srvBadges = (p.server_ids||[]).map(id => `<span class="badge bg-info" style="font-size:10px">${srvMap[id]||'srv'+id}</span>`).join(' ');
+    const srvLine = srvBadges || '<span style="opacity:.4;font-size:11px">все серверы</span>';
+    return `<div class="plan-c"><button class="plan-del" onclick="deletePlan(${p.id})">&#128465;</button><div class="plan-price">${p.price_rub}&#8381; <span>/ ${p.duration_days}д</span></div><div class="plan-name">${p.name}</div><div class="plan-meta">${p.traffic_gb?p.traffic_gb+'ГБ':'&#8734;'} ${p.description?'· '+p.description:''}</div><div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px">${srvLine}</div><div style="margin-top:8px"><span class="badge ${p.is_active?'bg-ok':'bg-err'}">${p.is_active?'Активен':'Откл.'}</span></div></div>`;
+  }).join('');
+}
+function _buildPlanServerCheckboxes(){
+  const c=document.getElementById('pf-servers');
+  if(!c)return;
+  c.innerHTML=(_servers||[]).map(s=>`<label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:var(--card2,#1e2130);padding:4px 10px;border-radius:8px;font-size:12px"><input type="checkbox" value="${s.id}"> ${s.flag||'🌍'} ${s.label}</label>`).join('');
+}
+async function addPlan(){
+  const name=document.getElementById('pf-name').value.trim(),price=document.getElementById('pf-price').value,days=document.getElementById('pf-days').value;
+  if(!name||!price||!days){toast('Заполните название, цену и дни',false);return;}
+  const server_ids=Array.from(document.querySelectorAll('#pf-servers input:checked')).map(cb=>+cb.value);
+  const r=await api('POST','/api/plans',{name,price_rub:parseFloat(price),duration_days:parseInt(days),traffic_gb:parseFloat(document.getElementById('pf-traffic').value)||0,sort_order:parseInt(document.getElementById('pf-sort').value)||0,description:document.getElementById('pf-desc').value.trim(),server_ids});
+  if(r?.id){toast('Тариф добавлен!');toggleIfrm('plan-form','btn-add-plan','+ Добавить тариф');loadPlans();}else toast('&#10007; Ошибка',false);
+}
+async function deletePlan(id){if(!confirm('Удалить тариф?'))return;await api('DELETE',`/api/plans/${id}`);toast('Удалён');loadPlans();}
+
+// PAYMENT SETTINGS
+async function loadPaySettings(){
+  const d=await api('GET','/api/settings');if(!d)return;
+  setChk('pay-manual',d.manual_payment_enabled);setVal('pay-card-url',d.card_link_url);setVal('pay-card-text',d.card_link_text);setVal('pay-manual-text',d.manual_payment_text);setChk('pay-heleket',d.heleket_enabled);setChk('pay-crypto',d.cryptopay_enabled);
+}
+
+// USERS
+async function loadUsers(){
+  const q=document.getElementById('usr-search')?.value.trim()||'';
+  const f=document.getElementById('usr-filter')?.value||'';
+  const data=await api('GET',`/api/users?page=1&search=${encodeURIComponent(q)}&filter=${f}`);
+  const tb=document.getElementById('users-tbody');
+  if(!data?.items){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Нет данных</td></tr>';return;}
+  tb.innerHTML=data.items.map(u=>`<tr><td><strong>${u.full_name||'—'}</strong><br><span style="color:var(--muted);font-size:10px">@${u.username||'—'} · ${u.telegram_id}</span></td><td>${u.is_banned?'<span class="badge bg-err">Бан</span>':u.subscription_active?'<span class="badge bg-ok">Активен</span>':'<span class="badge bg-warn">Нет</span>'}</td><td style="font-family:var(--mono)">${u.balance||0}&#8381;</td><td style="font-size:11px;color:var(--muted)">${u.subscription_expires?fmtDate(u.subscription_expires):'—'}</td><td style="font-size:11px;color:var(--muted)">${fmtDate(u.created_at)}</td><td style="display:flex;gap:5px"><button class="btn btn-sm" onclick="openUserDetail(${u.id},'${(u.full_name||u.telegram_id)}')" title="Баланс">&#128176;</button>${u.is_banned?`<button class="btn btn-ok btn-sm" onclick="unbanUser(${u.id})">&#10003;</button>`:`<button class="btn btn-d btn-sm" onclick="banUser(${u.id})">&#128683;</button>`}</td></tr>`).join('');
+}
+async function banUser(id){if(!confirm('Заблокировать?'))return;await api('POST',`/api/users/${id}/ban`);toast('Заблокирован');loadUsers();}
+async function unbanUser(id){await api('POST',`/api/users/${id}/unban`);toast('Разблокирован');loadUsers();}
+
+// TRANSACTIONS
+async function loadTransactions(){
+  const data=await api('GET','/api/payments');const tb=document.getElementById('payments-tbody');
+  if(!data?.items){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Нет данных</td></tr>';return;}
+  tb.innerHTML=data.items.map(p=>`<tr><td style="color:var(--muted);font-size:11px">${fmtDate(p.created_at)}</td><td>${p.user_name||p.user_id}</td><td style="color:var(--ok);font-weight:700">${p.amount}&#8381;</td><td><span class="badge bg-acc">${p.method||'—'}</span></td><td>${p.plan_name||'—'}</td><td><span class="badge ${p.status==='success'?'bg-ok':p.status==='pending'?'bg-warn':'bg-err'}">${p.status||'—'}</span></td></tr>`).join('');
+}
+
+// PROMOS
+async function loadPromos(){
+  const data=await api('GET','/api/promos');const tb=document.getElementById('promos-tbody');
+  if(!data?.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Нет промокодов</td></tr>';return;}
+  tb.innerHTML=data.map(p=>`<tr><td style="font-family:var(--mono);font-weight:700">${p.code}</td><td><span class="badge bg-acc">${p.discount_value}${p.discount_type==='percent'?'%':' руб'}</span></td><td>${p.uses_count||0}</td><td>${p.max_uses||'&#8734;'}</td><td style="color:var(--muted);font-size:11px">${p.valid_until?fmtDate(p.valid_until):'&#8734;'}</td><td><span class="badge ${p.is_active?'bg-ok':'bg-err'}">${p.is_active?'Активен':'Откл.'}</span></td><td><button class="btn btn-d btn-sm" onclick="deletePromo(${p.id})">&#128465;</button></td></tr>`).join('');
+}
+async function createPromo(){
+  const code=document.getElementById('pm-code').value.trim(),disc=parseInt(document.getElementById('pm-discount').value);
+  if(!code||!disc){toast('Заполните код и скидку',false);return;}
+  const r=await api('POST','/api/promos',{code,discount_type:'percent',discount_value:disc,max_uses:parseInt(document.getElementById('pm-limit').value)||0,valid_until:document.getElementById('pm-expires').value||null});
+  if(r?.id){toast('Промокод создан!');closeModal('modal-promo');loadPromos();}else toast('&#10007; '+(r?.detail||'Ошибка'),false);
+}
+async function deletePromo(id){if(!confirm('Удалить?'))return;await api('DELETE',`/api/promos/${id}`);toast('Удалён');loadPromos();}
+
+// STATS
+let _charts={};
+async function loadStats(){
+  const days=document.getElementById('rev-period')?.value||30;
+  const[conv,rev,usr,top]=await Promise.all([api('GET','/api/stats/conversion'),api('GET',`/api/stats/revenue-chart?days=${days}`),api('GET',`/api/stats/new-users-chart?days=${days}`),api('GET','/api/stats/top-traffic')]);
+  if(conv){setTxt('st-conv',(conv.conversion_rate||0)+'%');setTxt('st-ret',(conv.retention_rate||0)+'%');setTxt('st-paid',conv.paid_users||0);}
+  if(rev?.labels)drawChart('chart-rev',rev.labels,rev.data,'#7c6bff');
+  if(usr?.labels)drawChart('chart-usr',usr.labels,usr.data,'#4dffb0');
+  if(top?.items)document.getElementById('top-tbody').innerHTML=top.items.map((u,i)=>`<tr><td>${i+1}</td><td>${u.username||u.user_id}</td><td>${u.total_gb?.toFixed(2)||0}</td></tr>`).join('');
+}
+function drawChart(id,labels,data,color){
+  const ctx=document.getElementById(id)?.getContext('2d');if(!ctx)return;
+  if(_charts[id])_charts[id].destroy();
+  _charts[id]=new Chart(ctx,{type:'line',data:{labels,datasets:[{data,borderColor:color,backgroundColor:color+'22',fill:true,tension:.4,pointRadius:2}]},options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b6a8a',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b6a8a',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}}}}});
+}
+
+// SNI
+async function loadSni(){
+  const[wl,log]=await Promise.all([api('GET','/api/sni/whitelist'),api('GET','/api/sni/log-all')]);
+  if(wl?.domains)document.getElementById('sni-wl').innerHTML=wl.domains.map(d=>`<span class="wl-tag">${d}</span>`).join('')||'<span style="color:var(--muted)">Пусто</span>';
+  if(log?.items)document.getElementById('sni-log').innerHTML=log.items.map(l=>`<tr><td>${l.server_label||l.server_id}</td><td style="font-family:var(--mono);font-size:11px">${l.old_sni||'—'}</td><td style="font-family:var(--mono);font-size:11px;color:var(--ok)">${l.new_sni||'—'}</td><td style="color:var(--muted)">${l.reason||'—'}</td><td style="color:var(--muted);font-size:10px">${fmtDate(l.created_at)}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Ротаций не было</td></tr>';
+}
+async function addWlDomain(){const d=document.getElementById('sni-new').value.trim();if(!d)return;toast('Добавлен: '+d);document.getElementById('sni-new').value='';loadSni();}
+
+// BROADCAST
+function bcTypeChange(){document.getElementById('bc-file-wrap').style.display=document.getElementById('bc-type').value!=='text'?'block':'none';}
+async function sendBroadcast(){
+  const text=document.getElementById('bc-text').value.trim();if(!text){toast('Введите текст',false);return;}
+  const payload={message_type:document.getElementById('bc-type').value,target:document.getElementById('bc-target').value,text,button_text:document.getElementById('bc-btn-text').value.trim()||null,button_url:document.getElementById('bc-btn-url').value.trim()||null};
+  const res=document.getElementById('bc-res');res.style.display='block';res.style.color='var(--muted)';res.textContent='&#9203; Отправляю...';
+  const r=await api('POST','/api/broadcast/send',payload);
+  res.textContent=r?.ok?`&#10003; Отправлено ${r.sent||0} / Ошибок ${r.failed||0}`:'&#10007; Ошибка';res.style.color=r?.ok?'var(--ok)':'var(--err)';
+  if(r?.ok)loadBcHistory();
+}
+function previewBc(){const text=document.getElementById('bc-text').value;toast('Предпросмотр: '+text.slice(0,60)+(text.length>60?'...':''));}
+async function loadBcHistory(){
+  const data=await api('GET','/api/broadcast/history');const tb=document.getElementById('bc-hist');
+  if(!data?.items?.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px">Рассылок не было</td></tr>';return;}
+  tb.innerHTML=data.items.map(b=>`<tr><td style="font-size:11px;color:var(--muted)">${fmtDate(b.created_at)}</td><td>${b.message_type||'text'}</td><td>${b.target||'all'}</td><td style="color:var(--ok)">${b.sent_count||0}</td><td style="color:var(--err)">${b.failed_count||0}</td></tr>`).join('');
+}
+
+// SETTINGS
+async function loadSettings(){
+  const d=await api('GET','/api/settings');if(!d)return;
+  setVal('set-welcome',d.welcome_text);setVal('set-sub-issued',d.sub_issued_text);setVal('set-support',d.support_username);
+  if(document.getElementById('set-google-cid'))document.getElementById('set-google-cid').value=d.google_client_id||'';
+  setChk('set-trial',d.trial_enabled);setVal('set-trial-days',d.trial_days);setVal('set-trial-traffic',d.trial_traffic_gb);
+  setChk('set-ref',d.referral_enabled);setVal('set-ref-days',d.referral_days_reward);
+  document.getElementById('sfoot').textContent='v9.0 \u00B7 '+(d.bot_domain||'');
+}
+async function saveSystemSettings(){
+  const domain=document.getElementById('set-domain').value.trim();
+  const stCh=document.getElementById('set-status-ch').value.trim();
+  const supCh=document.getElementById('set-support-ch').value.trim();
+  const googleCid=document.getElementById('set-google-cid')?.value.trim()||'';
+  await api('POST','/api/setup/save',{bot_domain:domain,status_channel_id:stCh,support_chat_id:supCh,google_client_id:googleCid,bot_token:' ',admin_tg_id:' '}).catch(()=>{});
+  toast('Системные настройки сохранены');
+}
+
+// BACKUP
+async function loadBackups(){
+  const data=await api('GET','/api/backup/list');const tb=document.getElementById('backup-tbody');
+  if(!data?.backups?.length){tb.innerHTML='<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Бэкапов нет</td></tr>';return;}
+  tb.innerHTML=data.backups.map(b=>`<tr><td style="font-family:var(--mono);font-size:11px">${b.filename}</td><td style="color:var(--muted)">${b.size||'—'}</td><td style="color:var(--muted);font-size:11px">${fmtDate(b.created_at)}</td><td><a href="/api/backup/download/${b.filename}" class="btn btn-g btn-sm">&#11015; Скачать</a></td></tr>`).join('');
+}
+async function createBackup(){
+  showAlert('al-bak','&#9203; Создаю бэкап...','info');
+  const r=await api('POST','/api/backup/create');
+  if(r?.ok){showAlert('al-bak','&#10003; Бэкап создан: '+(r.filename||''),'ok');loadBackups();}
+  else showAlert('al-bak','&#10007; Ошибка: '+(r?.detail||''),'err');
+}
+async function restoreBackup(){
+  const file=document.getElementById('bak-file').files[0];if(!file){toast('Выберите файл',false);return;}
+  if(!confirm('&#9888; Все данные будут перезаписаны! Продолжить?'))return;
+  const fd=new FormData();fd.append('file',file);
+  showAlert('al-bak','&#9203; Восстанавливаю...','warn');
+  try{const r=await fetch('/api/backup/restore',{method:'POST',body:fd});const d=await r.json();if(d.ok)showAlert('al-bak','&#10003; Восстановлено!','ok');else showAlert('al-bak','&#10007; '+(d.detail||'Ошибка'),'err');}catch(e){showAlert('al-bak','&#10007; '+e.message,'err');}
+}
+
+
+// ─── SUPPORT ────────────────────────────────────────────────────────────────
+let _currentTicketId = null;
+
+async function loadSupport(){
+  const status = document.getElementById('sup-filter')?.value||'open';
+  // Load stats
+  const stats = await api('GET','/api/support/stats').catch(()=>null);
+  if(stats){
+    document.getElementById('sup-open').textContent = stats.open||0;
+    document.getElementById('sup-answered').textContent = stats.answered||0;
+    document.getElementById('sup-closed').textContent = stats.closed||0;
+  }
+  const data = await api('GET',`/api/support/tickets?status=${status}`).catch(()=>null);
+  const tb = document.getElementById('support-tbody');
+  if(!data?.items?.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px">Нет тикетов</td></tr>';return;}
+  const statusBadge = s => s==='open'?'<span class="badge bg-err">Открыт</span>':s==='answered'?'<span class="badge bg-ok">Отвечено</span>':'<span class="badge bg-warn">Закрыт</span>';
+  tb.innerHTML = data.items.map(t=>`<tr>
+    <td style="color:var(--muted);font-size:11px">#${t.id}</td>
+    <td><strong>${t.user_name||'—'}</strong><br><span style="color:var(--muted);font-size:10px">@${t.user_username||'—'} · ${t.user_id}</span></td>
+    <td style="max-width:260px"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.text}</div>${t.answer?`<div style="font-size:10px;color:var(--ok);margin-top:3px">✓ ${t.answer}</div>`:''}</td>
+    <td>${statusBadge(t.status)}</td>
+    <td style="font-size:11px;color:var(--muted)">${fmtDate(t.created_at)}</td>
+    <td style="display:flex;gap:4px">
+      ${t.status!=='closed'?`<button class="btn btn-p btn-sm" onclick="openTicketReply(${t.id},'${escHtml(t.text)}')">&#9992;</button>`:''}
+      <button class="btn btn-d btn-sm" onclick="closeTicket(${t.id})" title="Закрыть">&#10005;</button>
+    </td>
+  </tr>`).join('');
+}
+
+function escHtml(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+function openTicketReply(id, text){
+  _currentTicketId = id;
+  document.getElementById('ticket-reply-title').textContent = `Ответ на тикет #${id}`;
+  document.getElementById('ticket-original-text').textContent = text;
+  document.getElementById('ticket-answer').value = '';
+  openModal('modal-ticket-reply');
+}
+
+async function sendTicketReply(){
+  const answer = document.getElementById('ticket-answer').value.trim();
+  if(!answer){toast('Введите ответ',false);return;}
+  const r = await api('POST',`/api/support/tickets/${_currentTicketId}/reply`,{answer});
+  if(r?.ok){toast('Ответ отправлен!');closeModal('modal-ticket-reply');loadSupport();}
+  else toast('Ошибка: '+(r?.detail||''),false);
+}
+
+async function closeTicket(id){
+  await api('POST',`/api/support/tickets/${id}/close`);
+  toast('Тикет закрыт');loadSupport();
+}
+
+// ─── USER DETAIL + BALANCE ───────────────────────────────────────────────────
+let _currentUserId = null;
+
+async function openUserDetail(id, name){
+  _currentUserId = id;
+  document.getElementById('udet-title').textContent = name||`Пользователь #${id}`;
+  document.getElementById('udet-balance').textContent = '...';
+  document.getElementById('udet-status').textContent = '...';
+  document.getElementById('udet-log').innerHTML = '<span style="color:var(--muted)">Загрузка...</span>';
+  openModal('modal-user-detail');
+  await refreshUserDetail();
+}
+
+async function refreshUserDetail(){
+  const d = await api('GET',`/api/users/${_currentUserId}/detail`).catch(()=>null);
+  if(!d) return;
+  document.getElementById('udet-balance').textContent = (d.balance||0).toFixed(2);
+  document.getElementById('udet-status').textContent = d.is_banned?'🚫 Бан':d.subscriptions?.some(s=>s.status==='active')?'✅ Активен':'⚠️ Нет подп.';
+  const logs = d.balance_log||[];
+  if(!logs.length){document.getElementById('udet-log').innerHTML='<span style="color:var(--muted)">История пуста</span>';return;}
+  document.getElementById('udet-log').innerHTML = logs.map(l=>{
+    const sign = l.amount>0?'+':'';
+    const col = l.amount>0?'var(--ok)':'var(--err)';
+    return `<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--brd)"><span>${l.comment||'—'}</span><span style="color:${col};font-weight:700">${sign}${l.amount.toFixed(0)}₽ <span style="color:var(--muted);font-weight:400">${fmtDate(l.created_at)}</span></span></div>`;
+  }).join('');
+}
+
+async function changeBalance(sign){
+  const amount = parseFloat(document.getElementById('udet-amount').value);
+  const comment = document.getElementById('udet-comment').value.trim()||'Изменено из панели';
+  if(!amount||amount<=0){toast('Введите сумму',false);return;}
+  const r = await api('POST','/api/users/balance',{user_id:_currentUserId,amount:sign*amount,comment});
+  if(r?.ok){
+    toast(sign>0?`+${amount}₽ добавлено`:`-${amount}₽ списано`);
+    document.getElementById('udet-amount').value='';
+    document.getElementById('udet-comment').value='';
+    await refreshUserDetail();
+    loadUsers();
+  } else toast('Ошибка: '+(r?.detail||''),false);
+}
+
+
+// INIT
+loadDashboard();
+setInterval(loadBotStatus,15000);
+</script>
+</body>
+</html>

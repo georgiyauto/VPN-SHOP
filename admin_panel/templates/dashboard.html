@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VPN Admin Panel</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f13;color:#e2e8f0;min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;width:220px;height:100vh;background:#1a1a24;border-right:1px solid #2d2d3d;padding:20px 0;z-index:100;overflow-y:auto}
+.logo{padding:0 20px 20px;font-size:18px;font-weight:700;color:#7c6af5;border-bottom:1px solid #2d2d3d;margin-bottom:12px}
+.nav-section{padding:6px 20px;font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-top:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:#94a3b8;transition:all .2s;font-size:14px;border-left:3px solid transparent}
+.nav-item:hover,.nav-item.active{background:#252535;color:#e2e8f0;border-left-color:#7c6af5}
+.nav-item .icon{font-size:16px;width:20px}
+.main{margin-left:220px;padding:24px;min-height:100vh}
+.page{display:none}.page.active{display:block}
+h1{font-size:22px;font-weight:600;margin-bottom:20px;color:#f1f5f9}
+h2{font-size:16px;font-weight:600;margin-bottom:16px;color:#f1f5f9}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:#1a1a24;border:1px solid #2d2d3d;border-radius:12px;padding:20px}
+.stat-card .label{font-size:12px;color:#64748b;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.stat-card .value{font-size:28px;font-weight:700;color:#f1f5f9}
+.stat-card .value.green{color:#4ade80}
+.stat-card .value.purple{color:#a78bfa}
+.card{background:#1a1a24;border:1px solid #2d2d3d;border-radius:12px;padding:20px;margin-bottom:20px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .2s}
+.btn-primary{background:#7c6af5;color:#fff}.btn-primary:hover{background:#6b5ae4}
+.btn-danger{background:#ef4444;color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-success{background:#22c55e;color:#fff}.btn-success:hover{background:#16a34a}
+.btn-ghost{background:transparent;color:#94a3b8;border:1px solid #2d2d3d}.btn-ghost:hover{background:#252535;color:#e2e8f0}
+.btn-sm{padding:5px 10px;font-size:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:10px 12px;color:#64748b;border-bottom:1px solid #2d2d3d;font-weight:500;font-size:12px;text-transform:uppercase}
+td{padding:10px 12px;border-bottom:1px solid #1e1e2a;vertical-align:middle}
+tr:hover td{background:#1e1e2a}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.badge-green{background:#166534;color:#4ade80}
+.badge-red{background:#7f1d1d;color:#f87171}
+.badge-yellow{background:#713f12;color:#fbbf24}
+.badge-gray{background:#1e293b;color:#64748b}
+.badge-blue{background:#1e3a5f;color:#60a5fa}
+input,textarea,select{background:#252535;border:1px solid #2d2d3d;color:#e2e8f0;padding:8px 12px;border-radius:8px;font-size:13px;width:100%;outline:none;transition:border .2s}
+input:focus,textarea:focus,select:focus{border-color:#7c6af5}
+textarea{resize:vertical;min-height:80px;font-family:inherit}
+label{display:block;font-size:12px;color:#94a3b8;margin-bottom:5px;font-weight:500}
+.form-row{margin-bottom:14px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.flex{display:flex;align-items:center;gap:10px}
+.flex-between{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.toggle{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.slider{position:absolute;inset:0;background:#2d2d3d;border-radius:12px;cursor:pointer;transition:.3s}
+.slider:before{content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:#64748b;border-radius:50%;transition:.3s}
+input:checked+.slider{background:#7c6af5}
+input:checked+.slider:before{transform:translateX(18px);background:#fff}
+.search-input{max-width:280px;width:100%}
+.pagination{display:flex;gap:6px;margin-top:16px;align-items:center;flex-wrap:wrap}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#1a1a24;border:1px solid #2d2d3d;border-radius:16px;padding:24px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h2{margin-bottom:20px}
+.server-status{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.server-status.online{background:#4ade80}.server-status.offline{background:#f87171}.server-status.unknown{background:#64748b}
+.toast{position:fixed;bottom:24px;right:24px;background:#22c55e;color:#fff;padding:12px 20px;border-radius:10px;font-size:14px;z-index:999;opacity:0;transform:translateY(10px);transition:all .3s;max-width:400px}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.error{background:#ef4444}
+</style>
+<link rel="stylesheet" href="/static/admin-v2.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">KawaVPN Control</div>
+  <div class="nav-section">Обзор</div>
+  <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">OV</span>Обзор</div>
+  <div class="nav-section">Конфигурация</div>
+  <div class="nav-item" onclick="showPage('bot',this)"><span class="icon">🤖</span>Бот</div>
+  <div class="nav-item" onclick="showPage('servers',this)"><span class="icon">ND</span>Ноды</div>
+  <div class="nav-item" onclick="showPage('inbounds',this)"><span class="icon">IN</span>Инбаунды</div>
+  <div class="nav-item" onclick="showPage('plans',this)"><span class="icon">📦</span>Тарифы</div>
+  <div class="nav-item" onclick="showPage('settings',this)"><span class="icon">⚙️</span>Оплата</div>
+  <div class="nav-section">Пользователи</div>
+  <div class="nav-item" onclick="showPage('users',this)"><span class="icon">👤</span>Пользователи</div>
+  <div class="nav-item" onclick="showPage('payments',this)"><span class="icon">💰</span>Транзакции</div>
+  <div class="nav-item" onclick="showPage('promos',this)"><span class="icon">🎟</span>Промокоды</div>
+  <div class="nav-section">Инструменты</div>
+  <div class="nav-item" onclick="showPage('stats',this)"><span class="icon">📈</span>Статистика</div>
+  <div class="nav-item" onclick="showPage('sni',this)"><span class="icon">🔄</span>SNI ротация</div>
+  <div class="nav-item" onclick="showPage('broadcast',this)"><span class="icon">📢</span>Рассылка</div>
+  <div class="nav-item" onclick="showPage('textsettings',this)"><span class="icon">⚙️</span>Настройки</div>
+  <div class="nav-item" onclick="showPage('backup',this)"><span class="icon">💾</span>Бэкап</div>
+  <div class="nav-item" onclick="showPage('support',this)"><span class="icon">💬</span>Поддержка</div>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <h1>Dashboard</h1>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="label">Пользователей</div><div class="value" id="stat-users">—</div></div>
+    <div class="stat-card"><div class="label">Активных</div><div class="value green" id="stat-subs">—</div></div>
+    <div class="stat-card"><div class="label">Выручка мес.</div><div class="value purple" id="stat-revenue">—</div></div>
+    <div class="stat-card"><div class="label">Серверов</div><div class="value" id="stat-servers">—</div></div>
+  </div>
+  <div class="card">
+    <div class="flex-between"><h2>Выручка по дням</h2></div>
+    <canvas id="revenueChart" height="80"></canvas>
+  </div>
+  <div class="card">
+    <h2>Последние транзакции</h2>
+    <table><thead><tr><th>Пользователь</th><th>Сумма</th><th>Тариф</th><th>Метод</th><th>Дата</th></tr></thead>
+    <tbody id="dash-payments-tbody"><tr><td colspan="5" style="text-align:center;color:#64748b">Загрузка...</td></tr></tbody></table>
+  </div>
+</div>
+
+<!-- BOT PAGE -->
+<div class="page" id="page-bot">
+  <h1>🤖 Управление ботом</h1>
+  <div class="card">
+    <h2>Статус бота</h2>
+    <div id="bot-status-line" style="font-family:monospace;font-size:13px;padding:10px 0;color:#94a3b8">⏳ Загрузка...</div>
+    <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="botAction('start')">▶ Запустить</button>
+      <button class="btn btn-danger" onclick="botAction('stop')">⏹ Остановить</button>
+      <button class="btn btn-primary" onclick="botAction('restart')">🔄 Перезапустить</button>
+    </div>
+    <div id="bot-action-result" style="margin-top:10px;font-size:13px;display:none"></div>
+  </div>
+  <div class="card">
+    <h2>Токен бота</h2>
+    <p style="color:#94a3b8;font-size:13px;margin-bottom:14px">Получите токен у @BotFather. После сохранения бот перезапустится автоматически.</p>
+    <div class="form-row">
+      <label>BOT_TOKEN</label>
+      <input type="password" id="bot-token-input" placeholder="1234567890:AAXXXXXX..." style="max-width:500px">
+    </div>
+    <div class="form-row">
+      <label>ADMIN_IDS (Telegram ID через запятую)</label>
+      <input type="text" id="bot-admin-ids-input" placeholder="123456789,987654321" style="max-width:500px">
+    </div>
+    <button class="btn btn-primary" onclick="saveBotToken()">💾 Сохранить и запустить</button>
+    <div id="bot-token-result" style="margin-top:10px;font-size:13px;display:none"></div>
+  </div>
+  <div class="card">
+    <h2>💬 Настройки поддержки</h2>
+    <p style="color:#94a3b8;font-size:13px;margin-bottom:14px">Настройте отдельный бот поддержки — пользователи будут перенаправляться туда.</p>
+
+    <div class="form-row">
+      <label>Username бота поддержки (без @)</label>
+      <input type="text" id="support-bot-username-input" placeholder="kawavpn_support_bot" style="max-width:500px">
+      <p style="font-size:11px;color:#64748b;margin-top:4px">Пользователи перейдут в этот бот при нажатии кнопки «Поддержка»</p>
+    </div>
+    <div class="form-row">
+      <label>Токен бота поддержки</label>
+      <input type="text" id="support-bot-token-input" placeholder="1234567890:AAF..." style="max-width:500px">
+      <p style="font-size:11px;color:#64748b;margin-top:4px">Токен от @BotFather — бот запустится автоматически после сохранения</p>
+    </div>
+    <div class="form-row">
+      <label>Forum Chat ID (куда форвардить тикеты)</label>
+      <input type="text" id="support-forum-chat-id-input" placeholder="-1001234567890" style="max-width:500px">
+      <p style="font-size:11px;color:#64748b;margin-top:4px">ID форум-группы Telegram — для каждого тикета создаётся отдельный топик</p>
+    </div>
+
+    <hr style="border-color:#2d2d3d;margin:14px 0">
+    <p style="color:#94a3b8;font-size:12px;margin-bottom:10px">Запасные настройки (если бот поддержки не используется)</p>
+    <div class="form-row">
+      <label>Чат поддержки (chat_id или @username группы)</label>
+      <input type="text" id="support-chat-id-input" placeholder="-1001234567890 или @support_chat" style="max-width:500px">
+    </div>
+    <div class="form-row">
+      <label>Username поддержки (без @)</label>
+      <input type="text" id="support-username-input" placeholder="your_support_username" style="max-width:500px">
+    </div>
+    <div class="form-row">
+      <label>Операторы поддержки (Telegram ID через запятую)</label>
+      <input type="text" id="support-operator-ids-input" placeholder="123456789,987654321" style="max-width:500px">
+      <p style="font-size:11px;color:#64748b;margin-top:4px">Эти ID могут отвечать на тикеты</p>
+    </div>
+    <button class="btn btn-primary" onclick="saveSupportSettings()">💾 Сохранить настройки поддержки</button>
+    <div id="support-settings-result" style="margin-top:10px;font-size:13px;display:none"></div>
+  </div>
+</div>
+
+<!-- SERVERS -->
+<div class="page" id="page-servers">
+  <div class="flex-between">
+    <h1>Серверы</h1>
+    <button class="btn btn-primary" onclick="openProvisionModal()">🚀 Добавить сервер</button>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Сервер</th><th>URL ноды</th><th>SNI (текущий)</th><th>Ротация</th><th>Статус</th><th>Действия</th></tr></thead>
+      <tbody id="servers-tbody"></tbody>
+    </table>
+  </div>
+  <div id="sni-log-area" style="display:none" class="card">
+    <div class="flex-between">
+      <h2 id="sni-log-title">История SNI ротации</h2>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('sni-log-area').style.display='none'">✕ Закрыть</button>
+    </div>
+    <table><thead><tr><th>Время</th><th>SNI</th><th>Fingerprint</th><th>Статус</th></tr></thead>
+    <tbody id="sni-log-tbody"></tbody></table>
+  </div>
+</div>
+
+<!-- XRAY INBOUNDS -->
+<div class="page" id="page-inbounds">
+  <div class="flex-between">
+    <div>
+      <h1 style="margin-bottom:6px">Инбаунды Xray</h1>
+      <p style="color:var(--muted);font-size:13px">Профиль подключений выбранной ноды. Изменения проверяются Xray до применения.</p>
+    </div>
+    <button class="btn btn-primary" onclick="openInboundModal()">Создать инбаунд</button>
+  </div>
+  <div class="card" style="padding:16px">
+    <label for="inbound-server-select">Нода</label>
+    <select id="inbound-server-select" onchange="loadInbounds()" style="max-width:460px"></select>
+  </div>
+  <div class="inbound-summary">
+    <div class="inbound-metric"><span>Инбаундов</span><strong id="inbound-count">0</strong></div>
+    <div class="inbound-metric"><span>Клиентов</span><strong id="inbound-clients">0</strong></div>
+    <div class="inbound-metric"><span>Открытых портов</span><strong id="inbound-ports">0</strong></div>
+  </div>
+  <div class="card" style="padding:0">
+    <table>
+      <thead><tr><th>Tag</th><th>Протокол</th><th>Транспорт</th><th>Порт</th><th>SNI / Host</th><th>Клиенты</th><th>Действия</th></tr></thead>
+      <tbody id="inbounds-tbody"><tr><td colspan="7" class="empty-state">Выберите ноду</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PLANS -->
+<div class="page" id="page-plans">
+  <div class="flex-between">
+    <h1>Тарифы</h1>
+    <button class="btn btn-primary" onclick="openPlanModal(null)">+ Добавить тариф</button>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Название</th><th>Цена</th><th>Срок</th><th>Трафик</th><th>Серверы</th><th>Статус</th><th>Действия</th></tr></thead>
+      <tbody id="plans-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- USERS -->
+<div class="page" id="page-users">
+  <div class="flex-between">
+    <h1>Пользователи</h1>
+    <input class="search-input" type="text" placeholder="Поиск по ID / username..." oninput="searchUsers(this.value)">
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>ID</th><th>Username</th><th>Имя</th><th>Подписка</th><th>Истекает</th><th>Баланс</th><th>Партнёрский</th><th>Статус</th><th>Действия</th></tr></thead>
+      <tbody id="users-tbody"></tbody>
+    </table>
+    <div class="pagination" id="users-pagination"></div>
+  </div>
+</div>
+
+<!-- PAYMENTS -->
+<div class="page" id="page-payments">
+  <h1>Транзакции</h1>
+  <div class="card">
+    <table>
+      <thead><tr><th>ID</th><th>Пользователь</th><th>Тариф</th><th>Метод</th><th>Сумма</th><th>Статус</th><th>Дата</th></tr></thead>
+      <tbody id="payments-tbody"></tbody>
+    </table>
+    <div class="pagination" id="payments-pagination"></div>
+  </div>
+</div>
+
+<!-- SETTINGS (Оплата) -->
+<div class="page" id="page-settings">
+  <h1>Настройки оплаты</h1>
+  <div class="card">
+    <h2>💬 Ручная оплата (через поддержку)</h2>
+    <div class="form-row flex" style="margin-bottom:16px">
+      <label class="toggle"><input type="checkbox" id="s-manual-enabled" onchange="saveSetting('manual_payment_enabled',this.checked)"><span class="slider"></span></label>
+      <span style="font-size:13px">Включить метод</span>
+    </div>
+    <div class="form-row">
+      <label>Username поддержки (без @)</label>
+      <input type="text" id="s-support-username" placeholder="your_support" onblur="saveSetting('support_username',this.value)">
+    </div>
+    <div class="form-row">
+      <label>Текст сообщения (доступны: {amount}, {support})</label>
+      <textarea id="s-manual-text" rows="5" onblur="saveSetting('manual_payment_text',this.value)"></textarea>
+    </div>
+  </div>
+  <div class="card">
+    <h2>💳 Card link (внешний эквайринг)</h2>
+    <div class="form-row flex" style="margin-bottom:16px">
+      <label class="toggle"><input type="checkbox" id="s-cardlink-enabled" onchange="saveSetting('card_link_enabled',this.checked)"><span class="slider"></span></label>
+      <span style="font-size:13px">Включить метод</span>
+    </div>
+    <div class="form-row">
+      <label>Ссылка на форму оплаты</label>
+      <input type="text" id="s-cardlink-url" placeholder="https://yookassa.ru/..." onblur="saveSetting('card_link_url',this.value)">
+    </div>
+    <div class="form-row">
+      <label>Текст кнопки</label>
+      <input type="text" id="s-cardlink-text" placeholder="💳 Оплатить картой" onblur="saveSetting('card_link_text',this.value)">
+    </div>
+  </div>
+  <div class="card">
+    <h2>💰 Heleket (крипта)</h2>
+    <div class="form-row flex">
+      <label class="toggle"><input type="checkbox" id="s-heleket-enabled" onchange="saveSetting('heleket_enabled',this.checked)"><span class="slider"></span></label>
+      <span style="font-size:13px">Включить метод</span>
+    </div>
+  </div>
+  <div class="card">
+    <h2>💎 CryptoPay (Telegram)</h2>
+    <div class="form-row flex">
+      <label class="toggle"><input type="checkbox" id="s-cryptopay-enabled" onchange="saveSetting('cryptopay_enabled',this.checked)"><span class="slider"></span></label>
+      <span style="font-size:13px">Включить метод</span>
+    </div>
+  </div>
+  <div class="card">
+    <h2>🏦 СБП — Platega.io</h2>
+    <div class="form-row flex" style="margin-bottom:16px">
+      <label class="toggle"><input type="checkbox" id="s-sbp-enabled" onchange="saveSetting('sbp_enabled',this.checked)"><span class="slider"></span></label>
+      <span style="font-size:13px">Включить СБП (комиссия 11%)</span>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Merchant ID</label>
+      <input type="text" id="s-sbp-merchant-id" placeholder="Ваш Merchant ID из Platega" onblur="saveSetting('sbp_merchant_id',this.value)">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Secret Key</label>
+      <input type="password" id="s-sbp-secret-key" placeholder="Секретный ключ из Platega" onblur="saveSetting('sbp_secret_key',this.value)">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Callback URL (вставьте в ЛК Platega)</label>
+      <input type="text" id="s-sbp-callback-url" readonly style="background:#1e1e2e;color:#888;cursor:pointer" onclick="navigator.clipboard.writeText(this.value);showToast('✅ Скопировано!')">
+    </div>
+  </div>
+</div>
+
+<!-- TEXT SETTINGS -->
+<div class="page" id="page-textsettings">
+  <h1>Настройки бота</h1>
+  <div class="card">
+    <h2>🎁 Пробный период</h2>
+    <div class="form-row flex" style="margin-bottom:16px">
+      <label class="toggle"><input type="checkbox" id="s-trial-enabled" onchange="saveSetting('trial_enabled',this.checked)"><span class="slider"></span></label>
+      <span style="font-size:13px">Включить пробный период</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>Дней</label>
+        <input type="number" id="s-trial-days" min="1" max="30" onblur="saveSetting('trial_days',+this.value)">
+      </div>
+      <div class="form-row">
+        <label>Трафик (GB)</label>
+        <input type="number" id="s-trial-traffic" min="1" onblur="saveSetting('trial_traffic_gb',+this.value)">
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>👥 Реферальная программа</h2>
+    <div class="form-row flex" style="margin-bottom:16px">
+      <label class="toggle"><input type="checkbox" id="s-ref-enabled" onchange="saveSetting('referral_enabled',this.checked)"><span class="slider"></span></label>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Процент реферального вознаграждения (%)</label>
+      <input type="number" id="s-referral-percent" min="1" max="50" step="1" placeholder="10" onblur="saveSetting('referral_percent',parseFloat(this.value)||10)">
+    </div>
+    <div style="display:none"
+      <span style="font-size:13px">Включить</span>
+    </div>
+    <div class="form-row">
+      <label>Дней за каждого реферала</label>
+      <input type="number" id="s-ref-days" min="1" onblur="saveSetting('referral_days_reward',+this.value)">
+    </div>
+  </div>
+  <div class="card">
+    <h2>💬 Тексты бота</h2>
+    <div class="form-row">
+      <label>Название проекта (отображается в VPN приложениях вместо домена)</label>
+      <input type="text" id="project-name-input" placeholder="⚡ Kawa VPN ⚡" style="max-width:400px">
+      <p style="font-size:11px;color:#64748b;margin-top:4px">Например: ⚡ Kawa VPN ⚡ — видно в Happ, Hiddify и других клиентах</p>
+    </div>
+    <div class="form-row">
+      <label>Приветствие (доступно: {name}, {sub_status})</label>
+      <textarea id="s-welcome" rows="4" onblur="saveSetting('welcome_text',this.value)"></textarea>
+    </div>
+    <div class="form-row">
+      <label>Текст после активации подписки</label>
+      <textarea id="s-sub-issued" rows="3" onblur="saveSetting('sub_issued_text',this.value)"></textarea>
+    </div>
+    <div class="form-row">
+      <label>ℹ️ Текст кнопки «Информация» (поддерживает HTML)</label>
+      <textarea id="s-info-text" rows="5" placeholder="ℹ️ Информация о сервисе..." onblur="saveSetting('info_text',this.value)"></textarea>
+    </div>
+    <hr style="border-color:#1e1e2e;margin:16px 0">
+    <div class="form-row">
+      <label>🔒 Политика конфиденциальности — ссылка</label>
+      <input type="url" id="s-privacy-url" placeholder="https://example.com/privacy" onblur="saveSetting('privacy_policy_url',this.value)">
+      <small style="color:#6b7280;font-size:12px;margin-top:4px;display:block">Кнопка появится в разделе «О проекте» если ссылка указана</small>
+    </div>
+    <div class="form-row">
+      <label>📄 Пользовательское соглашение — ссылка</label>
+      <input type="url" id="s-terms-url" placeholder="https://example.com/terms" onblur="saveSetting('terms_of_service_url',this.value)">
+      <small style="color:#6b7280;font-size:12px;margin-top:4px;display:block">Кнопка появится в разделе «О проекте» если ссылка указана</small>
+    </div>
+  </div>
+</div>
+
+<!-- SNI ROTATION PAGE -->
+<div class="page" id="page-sni">
+  <h1>🔄 SNI Ротация</h1>
+  <div class="card" id="sni-whitelist-card">
+    <h2>📋 Whitelist доменов</h2>
+    <div id="whitelist-info" style="font-family:monospace;font-size:12px;color:#64748b">Загрузка...</div>
+  </div>
+  <div class="card">
+    <h2>⚙️ Управление по серверам</h2>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px">SNI меняется автоматически каждый час (в :30). Ротация работает только на серверах с протоколом <b>VLESS + Reality</b>.</p>
+    <table>
+      <thead><tr><th>Сервер</th><th>Текущий SNI</th><th>Fingerprint</th><th>Последняя ротация</th><th>Авто-ротация</th><th>Действие</th></tr></thead>
+      <tbody id="sni-servers-tbody"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>📊 Последние ротации</h2>
+    <table>
+      <thead><tr><th>Время</th><th>Сервер</th><th>SNI</th><th>FP</th><th>Статус</th></tr></thead>
+      <tbody id="sni-all-log-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PROMOS PAGE -->
+<div class="page" id="page-promos">
+  <div class="flex-between">
+    <h1>🎟 Промокоды</h1>
+    <button class="btn btn-primary" onclick="openModal('modal-promo')">➕ Создать</button>
+  </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>Код</th><th>Скидка</th><th>Использований</th><th>Лимит</th><th>Действует до</th><th>Статус</th><th>Действия</th></tr></thead>
+      <tbody id="promos-tbody"><tr><td colspan="7" style="text-align:center;color:#64748b">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- STATS PAGE -->
+<div class="page" id="page-stats">
+  <h1>📈 Статистика</h1>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px">
+    <div class="stat-card"><div class="label">Конверсия</div><div class="value purple" id="stat-conversion">—</div></div>
+    <div class="stat-card"><div class="label">Удержание</div><div class="value green" id="stat-retention">—</div></div>
+    <div class="stat-card"><div class="label">Платящих</div><div class="value" id="stat-paid-users">—</div></div>
+  </div>
+  <div class="card">
+    <div class="flex-between">
+      <h2>💰 Выручка по дням</h2>
+      <select id="revenue-days" onchange="loadStatsCharts()" style="background:#1a1a24;border:1px solid #2d2d3d;color:#e2e8f0;padding:4px 8px;border-radius:6px;width:auto">
+        <option value="7">7 дней</option>
+        <option value="30" selected>30 дней</option>
+        <option value="90">90 дней</option>
+      </select>
+    </div>
+    <canvas id="chart-revenue" height="80"></canvas>
+  </div>
+  <div class="card">
+    <h2>👤 Новые пользователи по дням</h2>
+    <canvas id="chart-users" height="80"></canvas>
+  </div>
+  <div class="card">
+    <h2>🏆 Топ-10 по трафику</h2>
+    <table>
+      <thead><tr><th>#</th><th>Пользователь</th><th>Трафик (GB)</th></tr></thead>
+      <tbody id="top-traffic-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- BROADCAST PAGE -->
+<div class="page" id="page-broadcast">
+  <h1>📢 Рассылка</h1>
+  <div class="card">
+    <h2>Новая рассылка</h2>
+    <p style="font-size:13px;color:#64748b;margin-bottom:16px">Используйте HTML-теги: &lt;b&gt;жирный&lt;/b&gt;, &lt;i&gt;курсив&lt;/i&gt;, &lt;code&gt;код&lt;/code&gt;</p>
+    <div class="form-row">
+      <label>Кому отправить</label>
+      <select id="bc-target">
+        <option value="all">👥 Всем пользователям</option>
+        <option value="active">✅ Только активным подписчикам</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Тип сообщения</label>
+      <select id="bc-type" onchange="toggleBcType()">
+        <option value="text">📝 Текст</option>
+        <option value="photo">🖼 Фото</option>
+        <option value="video">🎬 Видео</option>
+        <option value="document">📄 Документ</option>
+      </select>
+    </div>
+    <div id="bc-text-area" class="form-row">
+      <label>Текст сообщения (HTML)</label>
+      <textarea id="bc-text" rows="6" placeholder="Текст рассылки..."></textarea>
+    </div>
+    <div id="bc-file-area" class="form-row" style="display:none">
+      <label>File ID (из Telegram)</label>
+      <input type="text" id="bc-file-id" placeholder="AgACAgIAA...">
+      <small style="color:#64748b">Отправьте файл боту и используйте /getfileid для получения ID</small>
+      <label style="margin-top:12px">Подпись (HTML)</label>
+      <textarea id="bc-caption" rows="3" placeholder="Подпись к файлу..."></textarea>
+    </div>
+    <div class="form-row">
+      <label>Инлайн-кнопка (необязательно)</label>
+      <div class="flex">
+        <input type="text" id="bc-btn-text" placeholder="Текст кнопки" style="flex:1">
+        <input type="text" id="bc-btn-url" placeholder="https://ссылка" style="flex:2">
+      </div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-primary" onclick="sendBroadcast()">📤 Отправить рассылку</button>
+      <button class="btn btn-ghost" onclick="previewBroadcast()">👁 Предпросмотр</button>
+    </div>
+    <div id="bc-result" style="margin-top:12px;display:none;padding:12px;border-radius:8px;border:1px solid #2d2d3d"></div>
+  </div>
+  <div class="card">
+    <h2>История рассылок</h2>
+    <table>
+      <thead><tr><th>Дата</th><th>Тип</th><th>Аудитория</th><th>Отправлено</th><th>Ошибок</th></tr></thead>
+      <tbody id="bc-history-tbody"><tr><td colspan="5" style="text-align:center;color:#64748b">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- BACKUP PAGE -->
+<div class="page" id="page-backup">
+  <div class="flex-between">
+    <h1>💾 Резервные копии</h1>
+    <button class="btn btn-primary" onclick="createBackup()">➕ Создать бэкап сейчас</button>
+  </div>
+  <div class="card" style="border-left:4px solid #22c55e">
+    <h2>ℹ️ Автоматический бэкап</h2>
+    <p style="font-size:13px;color:#94a3b8">Автобэкап запускается ежедневно в 03:00. Файл отправляется вам в Telegram.<br>Хранятся последние <b>7 копий</b>.</p>
+  </div>
+  <div class="card">
+    <h2>📋 Список бэкапов</h2>
+    <div id="backup-list"><div style="text-align:center;color:#64748b;padding:20px">Загрузка...</div></div>
+  </div>
+  <div class="card">
+    <h2>⬆️ Восстановление из файла</h2>
+    <p style="font-size:13px;color:#ef4444;margin-bottom:12px">⚠️ <b>Внимание:</b> восстановление полностью перезапишет текущую базу данных!</p>
+    <div class="form-row">
+      <label>Загрузить .sql.gz файл</label>
+      <input type="file" id="restore-file" accept=".gz,.sql.gz">
+    </div>
+    <button class="btn btn-danger" onclick="restoreBackup()" style="margin-top:8px">⚠️ Восстановить БД</button>
+    <div id="restore-result" style="margin-top:12px;display:none"></div>
+  </div>
+</div>
+
+<!-- SUPPORT PAGE -->
+<div class="page" id="page-support">
+  <h1>💬 Поддержка</h1>
+  <div class="card">
+    <h2>Тикеты</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Пользователь</th><th>Сообщение</th><th>Статус</th><th>Дата</th><th>Действия</th></tr></thead>
+      <tbody id="support-tbody"><tr><td colspan="6" style="text-align:center;color:#64748b">Загрузка...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-server">
+  <div class="modal">
+    <h2 id="modal-server-title">Редактировать сервер</h2>
+    <input type="hidden" id="server-edit-id">
+    <div class="form-grid">
+      <div class="form-row"><label>Название</label><input id="server-label" placeholder="🇩🇪 Germany 1"></div>
+      <div class="form-row"><label>Флаг/эмодзи</label><input id="server-flag" value="🌍" style="max-width:80px"></div>
+    </div>
+    <div class="form-row"><label>URL node-agent</label><input id="server-url" placeholder="http://1.2.3.4:8090"></div>
+    <div class="form-row"><label>Путь (если нестандартный)</label><input id="server-path" value="/"></div>
+    <input id="server-user" type="hidden">
+    <div class="form-row"><label>Новый Bearer token (оставьте пустым, чтобы не менять)</label><input id="server-pass" type="password" autocomplete="new-password"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Inbound ID</label><input id="server-inbound" type="number" value="1"></div>
+      <div class="form-row"><label>Порядок сортировки</label><input id="server-order" type="number" value="0"></div>
+    </div>
+    <div id="server-test-result" style="margin:8px 0;font-size:13px;display:none"></div>
+    <div class="flex" style="gap:10px;margin-top:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="saveServer()">Сохранить</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-server')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-plan">
+  <div class="modal">
+    <h2 id="modal-plan-title">Добавить тариф</h2>
+    <input type="hidden" id="plan-edit-id">
+    <div class="form-row"><label>Название</label><input id="plan-name" placeholder="🔹 Базовый · 1 месяц"></div>
+    <div class="form-grid">
+      <div class="form-row"><label>Цена (руб)</label><input id="plan-price" type="number" min="0"></div>
+      <div class="form-row"><label>Дней</label><input id="plan-days" type="number" min="1"></div>
+    </div>
+    <div class="form-row"><label>Трафик GB (пусто = безлимит)</label><input id="plan-traffic" type="number" min="0"></div>
+    <div class="form-row">
+      <label>Серверы тарифа <small style="opacity:.6">(пусто = все)</small></label>
+      <div id="plan-servers-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:8px 0"></div>
+    </div>
+    <div class="flex" style="gap:10px;margin-top:8px">
+      <button class="btn btn-primary" onclick="savePlan()">💾 Сохранить</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-plan')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-activate">
+  <div class="modal">
+    <h2>Активировать подписку</h2>
+    <input type="hidden" id="activate-user-id">
+    <div class="form-row"><label>Выберите тариф</label><select id="activate-plan-id"></select></div>
+    <div class="flex" style="gap:10px;margin-top:8px">
+      <button class="btn btn-success" onclick="doActivate()">✅ Активировать</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-activate')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-balance">
+  <div class="modal">
+    <h2>💰 Управление балансом</h2>
+    <input type="hidden" id="balance-user-id">
+    <div id="balance-current" style="font-size:18px;margin:12px 0;color:#7c6af5"></div>
+    <div class="form-row">
+      <label>Сумма (+ пополнение, - списание)</label>
+      <input type="number" id="balance-amount" placeholder="например: 100 или -50">
+    </div>
+    <div class="form-row">
+      <label>Комментарий</label>
+      <input type="text" id="balance-comment" value="Изменение администратором">
+    </div>
+    <div class="flex" style="gap:10px;margin-top:8px">
+      <button class="btn btn-success" onclick="doUpdateBalance()">💰 Применить</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-balance')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD SERVER MODAL (provision) -->
+<div class="modal-overlay" id="modal-add-server">
+  <div class="modal" style="max-width:580px;max-height:90vh;overflow-y:auto">
+    <h2>Добавить Xray ноду</h2>
+
+    <!-- Mode tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:16px">
+      <button id="srv-mode-ssh-btn" class="btn btn-primary btn-sm" onclick="setSrvMode('ssh')" style="flex:1">Установить по SSH</button>
+      <button id="srv-mode-ready-btn" class="btn btn-ghost btn-sm" onclick="setSrvMode('ready')" style="flex:1">Подключить готовую</button>
+    </div>
+
+    <div class="form-row"><label>Название сервера</label><input type="text" id="srv-label" placeholder="🇩🇪 Germany 1"></div>
+
+    <!-- ── SSH MODE ── -->
+    <div id="srv-mode-ssh">
+      <div id="srv-type-hint" style="background:#0a1628;border:1px solid #1e3a5f;border-radius:8px;padding:10px;font-size:13px;margin-bottom:10px">
+        Бот подключится по SSH, установит официальный Xray-core, node-agent и создаст VLESS Reality inbound.
+      </div>
+      <div class="form-grid">
+        <div class="form-row"><label>IP адрес</label><input type="text" id="srv-ssh-host" placeholder="1.2.3.4"></div>
+        <div class="form-row"><label>SSH порт</label><input type="number" id="srv-ssh-port" value="22"></div>
+      </div>
+      <div class="form-row"><label>SSH пользователь</label><input type="text" id="srv-ssh-user" value="root"></div>
+      <div class="form-row"><label>Пароль root</label><input type="password" id="srv-ssh-pass" placeholder="SSH пароль"></div>
+      <div class="form-row"><label>SSH ключ (необязательно)</label><textarea id="srv-ssh-key" rows="2" placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;..."></textarea></div>
+    </div>
+
+    <!-- ── READY MODE (Xray node-agent already installed) ── -->
+    <div id="srv-mode-ready" style="display:none">
+      <div style="background:#0a1a0a;border:1px solid #1e3d1e;border-radius:8px;padding:10px;font-size:13px;margin-bottom:12px">
+        Укажите URL и Bearer-токен уже установленного KawaVPN node-agent.
+      </div>
+      <div class="form-row">
+        <label>URL node-agent</label>
+        <input type="text" id="srv-ready-url" placeholder="http://1.2.3.4:8090">
+      </div>
+      <div class="form-row"><label>Bearer token</label><input type="password" id="srv-ready-pass"></div>
+      <div class="form-row"><label>CA/server certificate (для self-signed HTTPS)</label><textarea id="srv-ready-cert" rows="4" placeholder="-----BEGIN CERTIFICATE-----"></textarea></div>
+    </div>
+
+    <div class="flex" style="gap:10px;margin-top:16px">
+      <button class="btn btn-primary" onclick="doAddServer()">Добавить ноду</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-server')">Отмена</button>
+    </div>
+    <div id="srv-add-result" style="margin-top:10px;display:none;font-size:13px"></div>
+  </div>
+</div>
+
+<!-- PROMO MODAL -->
+<div class="modal-overlay" id="modal-promo">
+  <div class="modal">
+    <h2>🎟 Новый промокод</h2>
+    <div class="form-row"><label>Код</label><input type="text" id="promo-code" placeholder="SALE30" style="text-transform:uppercase"></div>
+    <div class="form-row">
+      <label>Тип скидки</label>
+      <select id="promo-type">
+        <option value="percent">% от цены</option>
+        <option value="fixed">Фиксированная сумма (₽)</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Размер скидки</label><input type="number" id="promo-value" placeholder="30"></div>
+    <div class="form-row"><label>Лимит использований (пусто = без лимита)</label><input type="number" id="promo-max-uses" placeholder="100"></div>
+    <div class="form-row"><label>Действует до (пусто = бессрочно)</label><input type="datetime-local" id="promo-valid-until"></div>
+    <div class="flex" style="gap:10px;margin-top:8px">
+      <button class="btn btn-primary" onclick="savePromo()">✅ Создать</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-promo')">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-overlay" id="modal-inbound">
+  <div class="modal">
+    <div class="flex-between">
+      <h2>Новый инбаунд</h2>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-inbound')">Закрыть</button>
+    </div>
+    <div class="form-row"><label>Tag</label><input id="inbound-name" value="vless-reality" placeholder="vless-reality"></div>
+    <div class="form-row">
+      <label>Профиль</label>
+      <select id="inbound-preset" onchange="toggleInboundPreset()">
+        <option value="vless-reality">VLESS Reality</option>
+        <option value="vless-ws">VLESS WebSocket</option>
+      </select>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label>Порт</label><input id="inbound-port" type="number" value="443" min="1" max="65535"></div>
+      <div class="form-row"><label>Listen</label><input id="inbound-listen" value="0.0.0.0"></div>
+    </div>
+    <div class="form-row"><label id="inbound-host-label">Server name (SNI)</label><input id="inbound-server-name" value="www.microsoft.com"></div>
+    <div class="form-row" id="inbound-destination-row"><label>Reality target</label><input id="inbound-destination" placeholder="www.microsoft.com:443"></div>
+    <div class="form-row" id="inbound-path-row" style="display:none"><label>WebSocket path</label><input id="inbound-path" value="/vpn"></div>
+    <div id="inbound-form-error" style="display:none;color:#ff9292;font-size:12px;margin-bottom:12px"></div>
+    <div class="flex" style="justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal('modal-inbound')">Отмена</button>
+      <button class="btn btn-primary" onclick="createInbound()">Проверить и создать</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const API = '';
+let currentPage = {users:1, payments:1};
+window.__ADMIN_B64__ = '{{ admin_b64 | default("") }}';
+
+// ── Helpers ──────────────────────────────────────────────────
+function toast(msg, err=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (err ? ' error' : '');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+// alias
+function showToast(msg, err=false) { toast(msg, err); }
+
+async function api(method, path, body=null) {
+  const h = {'Content-Type':'application/json'};
+  if (window.__ADMIN_B64__) h['Authorization'] = 'Basic ' + window.__ADMIN_B64__;
+  const opts = {method, headers:h};
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('open'); el.style.display='flex'; }
+}
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) { el.classList.remove('open'); el.style.display='none'; }
+}
+document.querySelectorAll('.modal-overlay').forEach(m =>
+  m.addEventListener('click', e => { if (e.target===m) closeModal(m.id); })
+);
+
+// ── Navigation ───────────────────────────────────────────────
+function showPage(name, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + name);
+  if (page) page.classList.add('active');
+  if (navEl) navEl.classList.add('active');
+  // Load data for page
+  const loaders = {
+    dashboard: loadDashboard,
+    servers: loadServers,
+    inbounds: loadInboundServers,
+    plans: loadPlans,
+    users: () => loadUsers(),
+    payments: loadPayments,
+    settings: loadSettings,
+    textsettings: loadSettings,
+    sni: loadSniPage,
+    broadcast: loadBroadcastHistory,
+    backup: loadBackupList,
+    stats: loadStatsCharts,
+    promos: loadPromos,
+    bot: () => { loadBotStatus(); loadSupportSettings(); },
+    support: loadSupportTickets,
+  };
+  if (loaders[name]) loaders[name]();
+}
+
+// ── Dashboard ────────────────────────────────────────────────
+let revenueChart = null;
+async function loadDashboard() {
+  try {
+    const [revenue, dashStats] = await Promise.all([
+      api('GET', '/api/stats/revenue'),
+      api('GET', '/api/stats/dashboard'),
+    ]);
+    document.getElementById('stat-users').textContent   = dashStats.total_users ?? '—';
+    document.getElementById('stat-subs').textContent    = dashStats.active_subs ?? '—';
+    document.getElementById('stat-servers').textContent = dashStats.total_servers ?? '—';
+    document.getElementById('stat-revenue').textContent = (dashStats.revenue_month ?? 0).toFixed(0) + '₽';
+    const labels = revenue.map(r => r.date.slice(5));
+    const data   = revenue.map(r => r.amount);
+    if (revenueChart) revenueChart.destroy();
+    revenueChart = new Chart(document.getElementById('revenueChart'), {
+      type:'bar',
+      data:{labels, datasets:[{data, backgroundColor:'#7c6af588', borderColor:'#7c6af5', borderWidth:1, borderRadius:4}]},
+      options:{plugins:{legend:{display:false}}, scales:{x:{grid:{color:'#2d2d3d'},ticks:{color:'#64748b'}}, y:{grid:{color:'#2d2d3d'},ticks:{color:'#64748b',callback:v=>v+'₽'}}}}
+    });
+  } catch(e) { console.error('Dashboard:', e); }
+  // Recent payments
+  try {
+    const data = await api('GET', '/api/payments?page=1');
+    const statusMap = {paid:'badge-green',pending:'badge-yellow',failed:'badge-red',cancelled:'badge-gray'};
+    document.getElementById('dash-payments-tbody').innerHTML = (data.payments||[]).slice(0,5).map(p=>`
+      <tr><td><code>${p.user_id}</code></td><td>${p.amount}₽</td><td>${p.plan_id||'—'}</td><td>${p.method}</td>
+      <td style="font-size:12px;color:#64748b">${p.created_at?p.created_at.slice(0,16):''}</td></tr>`).join('') ||
+      '<tr><td colspan="5" style="text-align:center;color:#64748b">Нет транзакций</td></tr>';
+  } catch(e) {}
+}
+
+// ── Servers ──────────────────────────────────────────────────
+async function loadServers() {
+  const servers = await api('GET', '/api/servers');
+  const tbody = document.getElementById('servers-tbody');
+  tbody.innerHTML = servers.map(s => {
+    const typeIcon = 'X';
+    const statusBadge = s.install_status==='ready' ? '<span class="badge badge-green" style="font-size:10px">✅ ready</span>'
+      : s.install_status==='error' ? '<span class="badge badge-red" style="font-size:10px">❌ error</span>'
+      : s.install_status==='installing' ? '<span class="badge badge-yellow" style="font-size:10px">⏳ installing</span>'
+      : '<span class="badge badge-gray" style="font-size:10px">pending</span>';
+    const sniCell = s.current_sni
+      ? `<code style="color:#4ade80;font-size:11px">${s.current_sni}</code>`
+      : `<span style="color:#64748b;font-size:11px">—</span>`;
+    return `<tr>
+      <td>${typeIcon} ${s.flag||''} ${s.label}<br>${statusBadge}</td>
+      <td style="color:#64748b;font-size:12px">${s.node_url||'—'}</td>
+      <td>${sniCell}</td>
+      <td>
+        <label class="toggle" title="SNI ротация">
+          <input type="checkbox" ${s.sni_rotation_enabled?'checked':''} onchange="toggleSniRotation(${s.id},this.checked)">
+          <span class="slider"></span>
+        </label>
+      </td>
+      <td><span class="badge ${s.is_active?'badge-green':'badge-gray'}">${s.is_active?'Активен':'Отключён'}</span></td>
+      <td class="flex" style="gap:4px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" onclick="pingServer(${s.id})">🔍 Пинг</button>
+        <button class="btn btn-ghost btn-sm" onclick="rotateSniNow(${s.id},'${s.label.replace(/'/g,"\\'")}')">🔄 SNI</button>
+        <button class="btn btn-ghost btn-sm" onclick="showSniLog(${s.id},'${s.label.replace(/'/g,"\\'")}')">📋</button>
+        <button class="btn btn-ghost btn-sm" onclick="editServer(${JSON.stringify(s).replace(/"/g,'&quot;')})">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteServer(${s.id})">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleSniRotation(id, enabled) {
+  try { await api('PATCH', `/api/servers/${id}/sni-rotation?enabled=${enabled}`); toast(enabled?'✅ SNI ротация включена':'SNI ротация отключена'); loadServers(); }
+  catch(e) { toast('Ошибка: '+e.message, true); }
+}
+async function rotateSniNow(id, label) {
+  toast('⏳ Меняю SNI...');
+  try { const r = await api('POST', `/api/servers/${id}/rotate-sni-now`); r.ok ? (toast(`✅ [${label}] SNI → ${r.sni}`), loadServers()) : toast('❌ '+r.error, true); }
+  catch(e) { toast('Ошибка: '+e.message, true); }
+}
+async function showSniLog(id, label) {
+  try {
+    const logs = await api('GET', `/api/servers/${id}/sni-log`);
+    document.getElementById('sni-log-title').textContent = `История SNI — ${label}`;
+    document.getElementById('sni-log-tbody').innerHTML = logs.length
+      ? logs.map(l=>`<tr>
+          <td style="font-size:11px;color:#64748b">${l.rotated_at?l.rotated_at.slice(0,16):'—'}</td>
+          <td><code style="font-size:11px;color:${l.success?'#4ade80':'#f87171'}">${l.sni}</code></td>
+          <td style="font-size:11px;color:#64748b">${l.fingerprint||'—'}</td>
+          <td><span class="badge ${l.success?'badge-green':'badge-red'}">${l.success?'OK':'ERR'}</span></td>
+        </tr>`).join('')
+      : '<tr><td colspan="4" style="text-align:center;color:#64748b;padding:20px">Ротаций ещё не было</td></tr>';
+    const area = document.getElementById('sni-log-area');
+    area.style.display = 'block';
+    area.scrollIntoView({behavior:'smooth'});
+  } catch(e) { toast('Ошибка загрузки лога', true); }
+}
+async function pingServer(id) {
+  try { const r = await api('POST', `/api/servers/${id}/ping`); toast(r.ok?'✅ Онлайн':'❌ Оффлайн', !r.ok); }
+  catch { toast('❌ Недоступен', true); }
+}
+function editServer(s) {
+  document.getElementById('modal-server-title').textContent = 'Редактировать сервер';
+  document.getElementById('server-edit-id').value = s.id;
+  document.getElementById('server-label').value = s.label;
+  document.getElementById('server-flag').value = s.flag;
+  document.getElementById('server-url').value = s.node_url;
+  document.getElementById('server-path').value = s.node_path||'/';
+  document.getElementById('server-user').value = '';
+  document.getElementById('server-pass').value = '';
+  document.getElementById('server-inbound').value = s.inbound_id||1;
+  document.getElementById('server-order').value = s.sort_order||0;
+  openModal('modal-server');
+}
+async function saveServer() {
+  const id = document.getElementById('server-edit-id').value;
+  const data = {
+    label: document.getElementById('server-label').value,
+    flag: document.getElementById('server-flag').value,
+    node_url: document.getElementById('server-url').value,
+    node_path: document.getElementById('server-path').value,
+    node_token: document.getElementById('server-pass').value || undefined,
+    inbound_id: +document.getElementById('server-inbound').value,
+    sort_order: +document.getElementById('server-order').value,
+  };
+  try {
+    if (id) { await api('PATCH', `/api/servers/${id}`, data); toast('✅ Сервер обновлён'); }
+    else { const r = await api('POST', '/api/servers', data); toast(`✅ Сервер добавлен`); }
+    closeModal('modal-server'); loadServers();
+  } catch(e) { toast('Ошибка: '+e.message, true); }
+}
+async function testServerConnection() {
+  const url = document.getElementById('server-url').value;
+  const user = document.getElementById('server-user').value;
+  const pass = document.getElementById('server-pass').value;
+  const res = document.getElementById('server-test-result');
+  res.style.display = 'block'; res.textContent = '⏳ Проверяю...'; res.style.color = '#94a3b8';
+  try {
+    const r = await api('POST', '/api/servers/test-connection', {node_url:url, username:user, password:pass});
+    res.textContent = r.ok ? '✅ Подключение успешно!' : '❌ Ошибка: '+r.error;
+    res.style.color = r.ok ? '#4ade80' : '#f87171';
+  } catch(e) { res.textContent = '❌ '+e.message; res.style.color='#f87171'; }
+}
+async function deleteServer(id) {
+  if (!confirm('Удалить сервер?')) return;
+  await api('DELETE', `/api/servers/${id}`);
+  toast('Сервер удалён'); loadServers();
+}
+
+// ── Server Provisioning ───────────────────────────────────────
+let _srvMode = 'ssh';
+function setSrvMode(mode) {
+  _srvMode = mode;
+  document.getElementById('srv-mode-ssh').style.display = mode==='ssh' ? 'block' : 'none';
+  document.getElementById('srv-mode-ready').style.display = mode==='ready' ? 'block' : 'none';
+  document.getElementById('srv-mode-ssh-btn').className = 'btn btn-sm ' + (mode==='ssh' ? 'btn-primary' : 'btn-ghost');
+  document.getElementById('srv-mode-ready-btn').className = 'btn btn-sm ' + (mode==='ready' ? 'btn-primary' : 'btn-ghost');
+}
+function openProvisionModal() {
+  ['srv-label','srv-ssh-host','srv-ssh-pass','srv-ssh-key','srv-ready-url','srv-ready-pass','srv-ready-cert'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('srv-ssh-user').value = 'root';
+  document.getElementById('srv-ssh-port').value = '22';
+  document.getElementById('srv-add-result').style.display = 'none';
+  setSrvMode('ssh');
+  openModal('modal-add-server');
+}
+async function doAddServer() {
+  const label = document.getElementById('srv-label').value.trim();
+  if (!label) { toast('Введите название сервера', true); return; }
+  const resDiv = document.getElementById('srv-add-result');
+  resDiv.style.display = 'block'; resDiv.style.color = '#94a3b8';
+
+  if (_srvMode === 'ready') {
+    const nodeUrl = document.getElementById('srv-ready-url').value.trim();
+    const nodeToken = document.getElementById('srv-ready-pass').value;
+    if (!nodeUrl) { toast('Введите URL node-agent', true); return; }
+    if (!nodeToken) { toast('Введите Bearer token', true); return; }
+
+    const payload = {
+      label,
+      flag: label.match(/[\u{1F1E6}-\u{1F1FF}]{2}/u)?.[0] || '🌍',
+      ssh_host: nodeUrl.replace(/https?:\/\//, '').split(':')[0],
+      node_token: nodeToken,
+      node_cert: document.getElementById('srv-ready-cert').value.trim() || null,
+      node_url_override: nodeUrl,
+    };
+    resDiv.innerHTML = 'Проверяю Xray node-agent...';
+    const r = await api('POST', '/api/servers/provision-ready', payload);
+    if (r && r.ok) {
+      resDiv.innerHTML = `Нода добавлена (ID: ${r.server_id}). Проверяю конфигурацию...`;
+      resDiv.style.color = '#4ade80';
+      setTimeout(() => { closeModal('modal-add-server'); loadServers(); }, 3000);
+      pollInstallStatus(r.server_id);
+    } else {
+      resDiv.innerHTML = `❌ Ошибка: ${r?.detail || 'не удалось добавить сервер'}`;
+      resDiv.style.color = '#ef4444';
+    }
+
+  } else {
+    const host = document.getElementById('srv-ssh-host').value.trim();
+    const pass = document.getElementById('srv-ssh-pass').value;
+    const key = document.getElementById('srv-ssh-key').value.trim();
+    if (!host) { toast('Введите IP адрес сервера', true); return; }
+    if (!pass && !key) { toast('Введите пароль или SSH ключ', true); return; }
+    const payload = {
+      label,
+      ssh_host: host, ssh_port: parseInt(document.getElementById('srv-ssh-port').value)||22,
+      ssh_user: document.getElementById('srv-ssh-user').value.trim()||'root',
+      ssh_password: pass||null, ssh_key: key||null,
+      flag: label.match(/[\u{1F1E6}-\u{1F1FF}]{2}/u)?.[0]||'🌍',
+    };
+    resDiv.innerHTML = 'Устанавливаю официальный Xray-core и node-agent по SSH...';
+    const r = await api('POST', '/api/servers/provision', payload);
+    if (r && r.ok) {
+      resDiv.innerHTML = `✅ Сервер добавлен (ID: ${r.server_id}). Установка запущена в фоне.`;
+      resDiv.style.color = '#4ade80';
+      setTimeout(() => { closeModal('modal-add-server'); loadServers(); }, 3000);
+      pollInstallStatus(r.server_id);
+    } else {
+      resDiv.innerHTML = `❌ Ошибка: ${r?.detail || 'не удалось добавить сервер'}`;
+      resDiv.style.color = '#ef4444';
+    }
+  }
+}
+function pollInstallStatus(serverId) {
+  const interval = setInterval(async () => {
+    try {
+      const r = await api('GET', `/api/servers/${serverId}/install-status`);
+      const resDiv = document.getElementById('srv-add-result');
+      if (r.status === 'ready') {
+        toast(`✅ Сервер готов!`);
+        if (resDiv) resDiv.innerHTML = `✅ Сервер готов и работает!`;
+        clearInterval(interval); loadServers();
+      } else if (r.status === 'error') {
+        toast(`❌ Ошибка настройки сервера`, true);
+        if (resDiv) { resDiv.innerHTML = `❌ Ошибка: ${r.log||'смотрите логи'}`.substring(0,200); resDiv.style.color='#ef4444'; }
+        clearInterval(interval); loadServers();
+      } else if (r.status === 'installing' && resDiv && resDiv.style.display !== 'none') {
+        const shortLog = (r.log||'').split('\n').filter(Boolean).slice(-1)[0] || '';
+        if (shortLog) resDiv.innerHTML = `⏳ ${shortLog}`;
+      }
+    } catch {}
+  }, 5000);
+  setTimeout(() => clearInterval(interval), 600000);
+}
+
+// ── Plans ────────────────────────────────────────────────────
+async function loadPlans() {
+  const plans = await api('GET', '/api/plans');
+  let serversMap = {};
+  try { const srvs = await api('GET', '/api/servers'); srvs.forEach(s => serversMap[s.id]=s.label); } catch {}
+  document.getElementById('plans-tbody').innerHTML = plans.map(p => {
+    const srvBadge = (p.server_ids||[]).length
+      ? (p.server_ids||[]).map(id=>`<span class="badge badge-blue" style="font-size:11px">${serversMap[id]||'srv'+id}</span>`).join(' ')
+      : '<span style="opacity:.5">все</span>';
+    return `<tr>
+      <td>${p.name}</td><td>${p.price_rub}₽</td><td>${p.duration_days} дн.</td>
+      <td>${p.traffic_gb?p.traffic_gb+' GB':'∞'}</td><td>${srvBadge}</td>
+      <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Активен':'Скрыт'}</span></td>
+      <td class="flex">
+        <button class="btn btn-ghost btn-sm" onclick="editPlan(${p.id})">✏️</button>
+        <button class="btn btn-ghost btn-sm" onclick="togglePlan(${p.id},${!p.is_active})">${p.is_active?'Скрыть':'Показать'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePlan(${p.id})">🗑️</button>
+      </td></tr>`;
+  }).join('');
+}
+async function openPlanModal(plan) {
+  const srvs = await api('GET', '/api/servers');
+  const selectedIds = plan ? (plan.server_ids||[]) : [];
+  document.getElementById('plan-servers-list').innerHTML = srvs.map(s=>`
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;background:#252535;padding:4px 8px;border-radius:6px;font-size:12px">
+      <input type="checkbox" value="${s.id}" ${selectedIds.includes(s.id)?'checked':''}>
+      ${s.flag||'🌍'} ${s.label}
+    </label>`).join('');
+  document.getElementById('modal-plan-title').textContent = plan?'Редактировать тариф':'Добавить тариф';
+  document.getElementById('plan-edit-id').value = plan?plan.id:'';
+  document.getElementById('plan-name').value = plan?plan.name:'';
+  document.getElementById('plan-price').value = plan?plan.price_rub:'';
+  document.getElementById('plan-days').value = plan?plan.duration_days:'';
+  document.getElementById('plan-traffic').value = plan?(plan.traffic_gb||''):'';
+  openModal('modal-plan');
+}
+async function editPlan(id) { const plans = await api('GET','/api/plans'); const p=plans.find(p=>p.id===id); if(p) openPlanModal(p); }
+async function savePlan() {
+  const ids = Array.from(document.querySelectorAll('#plan-servers-list input:checked')).map(cb=>+cb.value);
+  const data = {
+    name: document.getElementById('plan-name').value,
+    price_rub: +document.getElementById('plan-price').value,
+    duration_days: +document.getElementById('plan-days').value,
+    traffic_gb: document.getElementById('plan-traffic').value ? +document.getElementById('plan-traffic').value : null,
+    server_ids: ids,
+  };
+  const id = document.getElementById('plan-edit-id').value;
+  try { id ? await api('PATCH',`/api/plans/${id}`,data) : await api('POST','/api/plans',data); toast('✅ Тариф сохранён'); closeModal('modal-plan'); loadPlans(); }
+  catch(e) { toast('Ошибка: '+e.message, true); }
+}
+async function togglePlan(id,active) { await api('PATCH',`/api/plans/${id}`,{is_active:active}); loadPlans(); }
+async function deletePlan(id) { if(!confirm('Удалить тариф?')) return; await api('DELETE',`/api/plans/${id}`); loadPlans(); }
+
+// ── Users ────────────────────────────────────────────────────
+let searchTimer;
+function searchUsers(v) { clearTimeout(searchTimer); searchTimer = setTimeout(()=>loadUsers(1,v), 400); }
+async function loadUsers(page=1, search='') {
+  currentPage.users = page;
+  const raw = await api('GET', `/api/users?page=${page}&per_page=50&search=${encodeURIComponent(search)}`);
+  const data = Array.isArray(raw) ? {users: raw, total: raw.length} : raw;
+  document.getElementById('users-tbody').innerHTML = (data.users||[]).map(u=>`
+    <tr style="${u.is_banned?'opacity:0.6':''}">
+      <td><code>${u.id}</code></td>
+      <td>${u.username?'@'+u.username:'—'}</td>
+      <td>${u.full_name||'—'}</td>
+      <td><span class="badge ${u.sub_active?'badge-green':'badge-gray'}">${u.sub_active?'Активна':'Нет'}</span></td>
+      <td style="font-size:12px;color:#64748b">${u.sub_expires?u.sub_expires.slice(0,10):'—'}</td>
+      <td style="color:#7c6af5;font-weight:600">${(u.balance||0).toFixed(0)} ₽</td>
+      <td style="color:#4ade80;font-weight:600" title="Всего заработано: ${(u.partner_earned||0).toFixed(0)}₽">${(u.partner_balance||0).toFixed(0)} ₽</td>
+      <td>${u.is_banned?'<span class="badge badge-red">Заблок.</span>':'<span class="badge badge-green">Активен</span>'}</td>
+      <td class="flex" style="gap:4px;flex-wrap:wrap">
+        <button class="btn btn-success btn-sm" onclick="openActivate(${u.id})">✅ Подписка</button>
+        <button class="btn btn-ghost btn-sm" onclick="openBalanceModal(${u.id},${u.balance||0})">💰 Баланс</button>
+        <button class="btn ${u.is_banned?'btn-primary':'btn-danger'} btn-sm" onclick="toggleBan(${u.id},${!u.is_banned})">${u.is_banned?'🔓 Разбан':'🚫 Бан'}</button>
+      </td>
+    </tr>`).join('');
+  const total = data.total||0, pages = Math.ceil(total/50);
+  let pag = '';
+  for (let i=1; i<=pages; i++) pag += `<button class="btn btn-ghost btn-sm ${i===page?'active':''}" onclick="loadUsers(${i},'${search}')">${i}</button> `;
+  document.getElementById('users-pagination').innerHTML = pag;
+}
+async function openActivate(userId) {
+  document.getElementById('activate-user-id').value = userId;
+  const plans = await api('GET', '/api/plans');
+  document.getElementById('activate-plan-id').innerHTML = plans.filter(p=>p.is_active).map(p=>`<option value="${p.id}">${p.name} — ${p.price_rub}₽</option>`).join('');
+  openModal('modal-activate');
+}
+async function doActivate() {
+  const userId = +document.getElementById('activate-user-id').value;
+  const planId = +document.getElementById('activate-plan-id').value;
+  try { await api('POST',`/api/users/${userId}/activate`,{user_id:userId,plan_id:planId}); toast('✅ Подписка активирована'); closeModal('modal-activate'); loadUsers(); }
+  catch(e) { toast('Ошибка: '+e.message, true); }
+}
+async function toggleBan(id, ban) { await api('POST',`/api/users/${id}/${ban?'ban':'unban'}`); toast(ban?'Пользователь заблокирован':'Пользователь разблокирован'); loadUsers(); }
+function openBalanceModal(userId, currentBalance) {
+  document.getElementById('balance-user-id').value = userId;
+  document.getElementById('balance-current').textContent = `Текущий баланс: ${currentBalance.toFixed(0)} ₽`;
+  document.getElementById('balance-amount').value = '';
+  document.getElementById('balance-comment').value = 'Изменение администратором';
+  openModal('modal-balance');
+}
+async function doUpdateBalance() {
+  const userId = document.getElementById('balance-user-id').value;
+  const amount = parseFloat(document.getElementById('balance-amount').value);
+  const comment = document.getElementById('balance-comment').value;
+  if (!amount || isNaN(amount)) { toast('Введите сумму', true); return; }
+  const r = await api('POST', '/api/users/balance', {user_id:parseInt(userId), amount, comment});
+  if (r) { toast(`✅ Баланс обновлён → ${r.new_balance.toFixed(0)} ₽`); closeModal('modal-balance'); loadUsers(); }
+}
+
+// ── Payments ─────────────────────────────────────────────────
+async function loadPayments(page=1) {
+  const data = await api('GET', `/api/payments?page=${page}`);
+  const statusMap = {paid:'badge-green',pending:'badge-yellow',failed:'badge-red',cancelled:'badge-gray'};
+  document.getElementById('payments-tbody').innerHTML = data.payments.map(p=>`
+    <tr><td>${p.id}</td><td><code>${p.user_id}</code></td><td>${p.plan_id||'—'}</td>
+    <td>${p.method}</td><td>${p.amount}₽</td>
+    <td><span class="badge ${statusMap[p.status]||'badge-gray'}">${p.status}</span></td>
+    <td style="font-size:12px;color:#64748b">${p.created_at?p.created_at.slice(0,16):''}</td></tr>`).join('');
+}
+
+// ── Settings ─────────────────────────────────────────────────
+async function loadSettings() {
+  const s = await api('GET', '/api/settings');
+  const set = (id, val) => { const el=document.getElementById(id); if(el) el.value=val||''; };
+  const chk = (id, val) => { const el=document.getElementById(id); if(el) el.checked=!!val; };
+  chk('s-manual-enabled', s.manual_payment_enabled);
+  set('s-support-username', s.support_username);
+  set('s-manual-text', s.manual_payment_text);
+  chk('s-cardlink-enabled', s.card_link_enabled);
+  set('s-cardlink-url', s.card_link_url);
+  set('s-cardlink-text', s.card_link_text);
+  chk('s-heleket-enabled', s.heleket_enabled);
+  chk('s-cryptopay-enabled', s.cryptopay_enabled);
+  chk('s-sbp-enabled', s.sbp_enabled);
+  set('s-sbp-merchant-id', s.sbp_merchant_id);
+  set('s-sbp-secret-key', s.sbp_secret_key);
+  // Callback URL — собираем из текущего origin
+  var cbEl = document.getElementById('s-sbp-callback-url');
+  if (cbEl) {
+    var domain = window.location.origin.replace(':1414','').replace(':8433','');
+    cbEl.value = domain + ':8433/sbp/webhook';
+  }
+  chk('s-trial-enabled', s.trial_enabled);
+  set('s-trial-days', s.trial_days);
+  set('s-trial-traffic', s.trial_traffic_gb);
+  chk('s-ref-enabled', s.referral_enabled);
+  set('s-ref-days', s.referral_days_reward);
+  set('s-welcome', s.welcome_text);
+  set('s-sub-issued', s.sub_issued_text);
+  set('s-info-text', s.info_text);
+  set('s-privacy-url', s.privacy_policy_url||'');
+  set('s-terms-url', s.terms_of_service_url||'');
+}
+async function saveSetting(key, value) {
+  try { await api('PATCH', '/api/settings', {[key]:value}); toast('✅ Сохранено'); }
+  catch(e) { toast('Ошибка', true); }
+}
+
+// ── SNI ──────────────────────────────────────────────────────
+async function loadSniPage() {
+  try {
+    const wl = await api('GET', '/api/sni/whitelist');
+    document.getElementById('whitelist-info').innerHTML =
+      `Всего доменов: <b style="color:#4ade80">${wl.total}</b> &nbsp;|&nbsp; Файл: <code>${wl.path}</code><br><br>` +
+      `Примеры: ` + wl.preview.slice(0,8).map(d=>`<code style="color:#a78bfa">${d}</code>`).join(' &nbsp; ');
+  } catch { document.getElementById('whitelist-info').textContent = 'Файл не найден'; }
+  try {
+    const servers = await api('GET', '/api/servers');
+    document.getElementById('sni-servers-tbody').innerHTML = servers.map(s=>`
+      <tr>
+        <td>${s.flag} ${s.label}</td>
+        <td><code style="font-size:11px;color:${s.current_sni?'#4ade80':'#64748b'}">${s.current_sni||'—'}</code></td>
+        <td style="font-size:11px;color:#64748b">${s.fingerprint||'—'}</td>
+        <td style="font-size:11px;color:#64748b">${s.sni_last_rotated?s.sni_last_rotated.slice(0,16):'никогда'}</td>
+        <td><label class="toggle"><input type="checkbox" ${s.sni_rotation_enabled?'checked':''} onchange="toggleSniRotation(${s.id},this.checked)"><span class="slider"></span></label></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="rotateSniNow(${s.id},'${s.label.replace(/'/g,"\\'")}')">🔄 Сменить сейчас</button></td>
+      </tr>`).join('');
+  } catch {}
+  try {
+    const logs = await api('GET', '/api/sni/log-all');
+    document.getElementById('sni-all-log-tbody').innerHTML = logs.length
+      ? logs.map(l=>`<tr>
+          <td style="font-size:11px;color:#64748b">${l.rotated_at?l.rotated_at.slice(0,16):'—'}</td>
+          <td style="font-size:12px">${l.server_label||l.server_id}</td>
+          <td><code style="font-size:11px;color:${l.success?'#4ade80':'#f87171'}">${l.sni}</code></td>
+          <td style="font-size:11px;color:#64748b">${l.fingerprint||'—'}</td>
+          <td><span class="badge ${l.success?'badge-green':'badge-red'}">${l.success?'OK':'ERR'}</span></td>
+        </tr>`).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:#64748b;padding:20px">Ротаций ещё не было</td></tr>';
+  } catch {}
+}
+
+// ── Promos ────────────────────────────────────────────────────
+async function loadPromos() {
+  const promos = await api('GET', '/api/promos');
+  const tbody = document.getElementById('promos-tbody');
+  if (!promos||!promos.length) { tbody.innerHTML='<tr><td colspan="7" style="text-align:center;color:#64748b">Промокодов пока нет</td></tr>'; return; }
+  tbody.innerHTML = promos.map(p=>`
+    <tr>
+      <td><code style="font-size:13px">${p.code}</code></td>
+      <td>${p.discount_type==='percent'?p.discount_value+'%':p.discount_value+'₽'}</td>
+      <td>${p.uses_count}</td><td>${p.max_uses||'∞'}</td>
+      <td style="font-size:12px;color:#64748b">${p.valid_until?p.valid_until.slice(0,10):'∞'}</td>
+      <td><span class="badge ${p.is_active?'badge-green':'badge-gray'}">${p.is_active?'Активен':'Отключён'}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deletePromo(${p.id})">🗑</button></td>
+    </tr>`).join('');
+}
+async function savePromo() {
+  const code = document.getElementById('promo-code').value.trim().toUpperCase();
+  const type = document.getElementById('promo-type').value;
+  const value = parseFloat(document.getElementById('promo-value').value);
+  const maxUses = document.getElementById('promo-max-uses').value;
+  const validUntil = document.getElementById('promo-valid-until').value;
+  if (!code||!value) { toast('Заполните код и скидку', true); return; }
+  const r = await api('POST','/api/promos',{code,discount_type:type,discount_value:value,max_uses:maxUses?parseInt(maxUses):null,valid_until:validUntil||null});
+  if (r) { toast(`✅ Промокод ${code} создан`); closeModal('modal-promo'); loadPromos(); }
+}
+async function deletePromo(id) {
+  if (!confirm('Удалить промокод?')) return;
+  const r = await api('DELETE', `/api/promos/${id}`);
+  if (r) { toast('🗑 Промокод удалён'); loadPromos(); }
+}
+
+// ── Stats ─────────────────────────────────────────────────────
+let chartRevenue=null, chartUsers=null;
+async function loadStatsCharts() {
+  try {
+    const conv = await api('GET', '/api/stats/conversion');
+    if (conv) {
+      document.getElementById('stat-conversion').textContent = conv.conversion_percent+'%';
+      document.getElementById('stat-retention').textContent = conv.retention_percent+'%';
+      document.getElementById('stat-paid-users').textContent = conv.paid_users;
+    }
+  } catch {}
+  const days = document.getElementById('revenue-days')?.value||30;
+  try {
+    const rev = await api('GET', `/api/stats/revenue-chart?days=${days}`);
+    const ctx = document.getElementById('chart-revenue').getContext('2d');
+    if (chartRevenue) chartRevenue.destroy();
+    chartRevenue = new Chart(ctx, {type:'bar', data:{labels:rev.map(r=>r.day.slice(5)), datasets:[{label:'Выручка (₽)',data:rev.map(r=>r.revenue),backgroundColor:'rgba(124,106,245,0.6)',borderColor:'#7c6af5',borderWidth:1,borderRadius:4}]}, options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b'},grid:{color:'#1e1e2e'}},y:{ticks:{color:'#64748b'},grid:{color:'#1e1e2e'}}}}});
+  } catch {}
+  try {
+    const usr = await api('GET', `/api/stats/new-users-chart?days=${days}`);
+    const ctx2 = document.getElementById('chart-users').getContext('2d');
+    if (chartUsers) chartUsers.destroy();
+    chartUsers = new Chart(ctx2, {type:'line', data:{labels:usr.map(r=>r.day.slice(5)), datasets:[{label:'Новые пользователи',data:usr.map(r=>r.count),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,0.1)',tension:0.4,fill:true}]}, options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#64748b'},grid:{color:'#1e1e2e'}},y:{ticks:{color:'#64748b'},grid:{color:'#1e1e2e'},beginAtZero:true}}}});
+  } catch {}
+  try {
+    const top = await api('GET', '/api/stats/top-traffic');
+    document.getElementById('top-traffic-tbody').innerHTML = top&&top.length
+      ? top.map((u,i)=>`<tr><td style="color:#7c6af5;font-weight:700">#${i+1}</td><td>${u.full_name||'—'} ${u.username?`<span style="color:#64748b">@${u.username}</span>`:''}</td><td style="font-weight:600">${u.traffic_gb} GB</td></tr>`).join('')
+      : '<tr><td colspan="3" style="text-align:center;color:#64748b">Нет данных</td></tr>';
+  } catch {}
+}
+
+// ── Broadcast ─────────────────────────────────────────────────
+function toggleBcType() {
+  const t = document.getElementById('bc-type').value;
+  document.getElementById('bc-text-area').style.display = t==='text'?'block':'none';
+  document.getElementById('bc-file-area').style.display = t!=='text'?'block':'none';
+}
+async function loadBroadcastHistory() {
+  const tbody = document.getElementById('bc-history-tbody');
+  try {
+    const r = await api('GET', '/api/broadcast/history');
+    if (!r||!r.length) { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b">Рассылки ещё не отправлялись</td></tr>'; return; }
+    const tl={text:'📝 Текст',photo:'🖼 Фото',video:'🎬 Видео',document:'📄 Документ'};
+    tbody.innerHTML = r.map(b=>`<tr><td style="font-size:12px;color:#64748b">${new Date(b.created_at).toLocaleString('ru')}</td><td>${tl[b.type]||b.type}</td><td>${b.target==='all'?'Все':'Активные'}</td><td style="color:#22c55e"><b>${b.sent}</b></td><td style="color:#ef4444">${b.failed}</td></tr>`).join('');
+  } catch { tbody.innerHTML='<tr><td colspan="5" style="text-align:center;color:#64748b">Ошибка загрузки</td></tr>'; }
+}
+function previewBroadcast() {
+  const type = document.getElementById('bc-type').value;
+  const text = type==='text' ? document.getElementById('bc-text').value : document.getElementById('bc-caption').value;
+  const btnText = document.getElementById('bc-btn-text').value;
+  const btnUrl = document.getElementById('bc-btn-url').value;
+  alert(`ПРЕДПРОСМОТР:\n\n${text}${btnText?'\n\n🔘 Кнопка: ['+btnText+']('+btnUrl+')':''}\n\nТип: ${type}`);
+}
+async function sendBroadcast() {
+  const type = document.getElementById('bc-type').value;
+  const target = document.getElementById('bc-target').value;
+  const btnText = document.getElementById('bc-btn-text').value.trim();
+  const btnUrl = document.getElementById('bc-btn-url').value.trim();
+  let payload = {type, target};
+  if (type==='text') {
+    payload.text = document.getElementById('bc-text').value.trim();
+    if (!payload.text) { toast('Введите текст', true); return; }
+  } else {
+    payload.file_id = document.getElementById('bc-file-id').value.trim();
+    payload.caption = document.getElementById('bc-caption').value.trim();
+    if (!payload.file_id) { toast('Введите File ID', true); return; }
+  }
+  if (btnText&&btnUrl) { payload.button_text=btnText; payload.button_url=btnUrl; }
+  const resDiv = document.getElementById('bc-result');
+  resDiv.style.display='block'; resDiv.innerHTML='⏳ Отправка рассылки...';
+  const r = await api('POST', '/api/broadcast/send', payload);
+  if (r) { resDiv.innerHTML=`✅ <b>Рассылка завершена!</b><br>📤 Отправлено: <b>${r.sent}</b> &nbsp; ❌ Ошибок: <b>${r.failed}</b>`; resDiv.style.background='#1a2a1a'; resDiv.style.borderColor='#22c55e'; }
+  else { resDiv.innerHTML='❌ Ошибка при отправке.'; resDiv.style.background='#2a1a1a'; resDiv.style.borderColor='#ef4444'; }
+}
+
+// ── Backup ────────────────────────────────────────────────────
+async function loadBackupList() {
+  const div = document.getElementById('backup-list');
+  try {
+    const r = await api('GET', '/api/backup/list');
+    if (!r||!r.length) { div.innerHTML='<p style="color:#64748b;text-align:center;padding:20px">Бэкапов пока нет.</p>'; return; }
+    div.innerHTML=`<table><thead><tr><th>Файл</th><th>Дата</th><th>Размер</th><th>Действия</th></tr></thead><tbody>${r.map(b=>`<tr><td><code style="font-size:12px">${b.filename}</code></td><td>${new Date(b.created).toLocaleString('ru')}</td><td>${b.size_kb} KB</td><td><a href="/api/backup/download/${b.filename}" class="btn btn-ghost btn-sm" download>⬇️ Скачать</a></td></tr>`).join('')}</tbody></table>`;
+  } catch { div.innerHTML='<p style="color:#ef4444;padding:20px">Ошибка загрузки</p>'; }
+}
+async function createBackup() {
+  toast('⏳ Создаю бэкап...');
+  try { const r = await api('POST','/api/backup/create'); if(r) { toast(`✅ Бэкап создан: ${r.filename} (${r.size_kb} KB)`); loadBackupList(); } }
+  catch { toast('❌ Ошибка создания бэкапа', true); }
+}
+async function restoreBackup() {
+  const fileInput = document.getElementById('restore-file');
+  const resDiv = document.getElementById('restore-result');
+  if (!fileInput.files.length) { toast('Выберите файл', true); return; }
+  if (!confirm('⚠️ ВНИМАНИЕ! Это перезапишет текущую базу данных. Продолжить?')) return;
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+  resDiv.style.display='block'; resDiv.innerHTML='⏳ Восстановление...';
+  try {
+    const resp = await fetch('/api/backup/restore', {method:'POST', headers:{'Authorization':'Basic '+(window.__ADMIN_B64__||'')}, body:formData});
+    const data = await resp.json();
+    resDiv.innerHTML = resp.ok ? '✅ <b>База данных успешно восстановлена!</b>' : `❌ Ошибка: ${data.detail}`;
+    resDiv.style.color = resp.ok ? '#22c55e' : '#ef4444';
+  } catch(e) { resDiv.innerHTML=`❌ Ошибка: ${e.message}`; }
+}
+
+// ── Bot Control ───────────────────────────────────────────────
+async function loadBotStatus() {
+  try {
+    const d = await api('GET', '/api/bot/status');
+    const el = document.getElementById('bot-status-line');
+    if (el) {
+      const color = d.running?'#4ade80':'#f87171';
+      const tokenIcon = d.token_set?'🔑 Токен задан':'⚠️ Токен не задан';
+      el.innerHTML = `<span style="color:${color}">●</span> ${d.status_line||(d.running?'RUNNING':'STOPPED')} &nbsp; <span style="color:#94a3b8;font-size:11px">${tokenIcon}</span>`;
+    }
+  } catch {}
+}
+async function botAction(action) {
+  const res = document.getElementById('bot-action-result');
+  res.style.display='block'; res.textContent='⏳ Выполняю...'; res.style.color='#94a3b8';
+  try {
+    const d = await api('POST', `/api/bot/${action}`);
+    res.textContent = d.output||(d.ok?'OK':'Ошибка'); res.style.color = d.ok?'#4ade80':'#f87171';
+    setTimeout(loadBotStatus, 2000);
+  } catch(e) { res.textContent='Ошибка: '+e; res.style.color='#f87171'; }
+}
+async function saveBotToken() {
+  const token = document.getElementById('bot-token-input').value.trim();
+  const adminIds = document.getElementById('bot-admin-ids-input').value.trim();
+  const res = document.getElementById('bot-token-result');
+  if (!token) { alert('Введите токен'); return; }
+  res.style.display='block'; res.textContent='⏳ Сохраняю и перезапускаю бота...'; res.style.color='#94a3b8';
+  try {
+    const d = await api('POST','/api/bot/token',{bot_token:token,admin_ids:adminIds});
+    res.textContent = d.ok ? ('✅ Сохранено! '+(d.output||'')) : ('❌ '+(d.detail||'Ошибка'));
+    res.style.color = d.ok?'#4ade80':'#f87171';
+    if (d.ok) setTimeout(loadBotStatus, 3000);
+  } catch(e) { res.textContent='Ошибка: '+e; res.style.color='#f87171'; }
+}
+async function loadSupportSettings() {
+  try {
+    const s = await api('GET', '/api/settings');
+    if (s.support_bot_username) document.getElementById('support-bot-username-input').value = s.support_bot_username;
+    if (s.support_bot_token) document.getElementById('support-bot-token-input').value = s.support_bot_token;
+    if (s.support_forum_chat_id) document.getElementById('support-forum-chat-id-input').value = s.support_forum_chat_id;
+    if (s.project_name) document.getElementById('project-name-input').value = s.project_name;
+    if (s.support_chat_id) document.getElementById('support-chat-id-input').value = s.support_chat_id;
+    if (s.support_username) document.getElementById('support-username-input').value = s.support_username;
+    if (s.support_operator_ids) document.getElementById('support-operator-ids-input').value = s.support_operator_ids;
+    // Also load bot token fields
+    try { const env = await api('GET','/api/bot/status'); if(env.token_set) document.getElementById('bot-token-input').placeholder='Токен задан (не отображается)'; } catch {}
+  } catch {}
+}
+async function saveSupportSettings() {
+  const chatId    = document.getElementById('support-chat-id-input').value.trim();
+  const username  = document.getElementById('support-username-input').value.trim().replace('@','');
+  const opIds     = document.getElementById('support-operator-ids-input').value.trim();
+  const botUser   = (document.getElementById('support-bot-username-input')?.value||'').trim().replace('@','');
+  const botToken  = (document.getElementById('support-bot-token-input')?.value||'').trim();
+  const forumId   = (document.getElementById('support-forum-chat-id-input')?.value||'').trim();
+  const projName  = (document.getElementById('project-name-input')?.value||'').trim();
+  const res = document.getElementById('support-settings-result');
+  res.style.display='block'; res.textContent='⏳ Сохраняю...'; res.style.color='#94a3b8';
+  try {
+    const d = await api('POST','/api/settings',{
+      support_chat_id:       chatId||null,
+      support_username:      username||null,
+      support_operator_ids:  opIds||null,
+      support_bot_username:  botUser||null,
+      support_bot_token:     botToken||null,
+      support_forum_chat_id: forumId||null,
+      project_name:          projName||null
+    });
+    if (username) { const el=document.getElementById('s-support-username'); if(el) el.value=username; }
+    res.textContent = d.ok?'✅ Настройки поддержки сохранены!':'❌ Ошибка';
+    res.style.color = d.ok?'#4ade80':'#f87171';
+  } catch(e) { res.textContent='Ошибка: '+e; res.style.color='#f87171'; }
+}
+async function saveAdminIds() {
+  const ids = document.getElementById('bot-admins-only-input')?.value?.trim();
+  if (!ids) return;
+  try { const d = await api('POST','/api/bot/admins',{admin_ids:ids}); toast(d.ok?'✅ Сохранено':'❌ Ошибка', !d.ok); } catch {}
+}
+
+// ── Support Tickets ───────────────────────────────────────────
+async function loadSupportTickets() {
+  const tbody = document.getElementById('support-tbody');
+  try {
+    const r = await api('GET', '/api/support/tickets');
+    if (!r||!r.length) { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#64748b">Тикетов пока нет</td></tr>'; return; }
+    tbody.innerHTML = r.map(t=>`
+      <tr>
+        <td><code>${t.id}</code></td>
+        <td><code>${t.user_id}</code></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.message||'—'}</td>
+        <td><span class="badge ${t.status==='open'?'badge-yellow':t.status==='closed'?'badge-gray':'badge-green'}">${t.status}</span></td>
+        <td style="font-size:12px;color:#64748b">${t.created_at?t.created_at.slice(0,16):'—'}</td>
+        <td class="flex">
+          <button class="btn btn-ghost btn-sm" onclick="closeTicket(${t.id})">✅ Закрыть</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteTicket(${t.id})">🗑</button>
+        </td>
+      </tr>`).join('');
+  } catch { tbody.innerHTML='<tr><td colspan="6" style="text-align:center;color:#64748b">Ошибка загрузки</td></tr>'; }
+}
+async function closeTicket(id) { try { await api('POST',`/api/support/tickets/${id}/close`); toast('Тикет закрыт'); loadSupportTickets(); } catch {} }
+async function deleteTicket(id) { if(!confirm('Удалить тикет?')) return; try { await api('DELETE',`/api/support/tickets/${id}`); loadSupportTickets(); } catch {} }
+
+// ── Plain Xray inbounds ──────────────────────────────────────
+async function loadInboundServers() {
+  const select = document.getElementById('inbound-server-select');
+  try {
+    const servers = await api('GET', '/api/servers');
+    const ready = servers.filter(s => s.install_status === 'ready' && s.node_url);
+    select.innerHTML = ready.length
+      ? ready.map(s => `<option value="${s.id}">${escapeHtml(s.label)} · ${escapeHtml(s.node_url)}</option>`).join('')
+      : '<option value="">Нет готовых нод</option>';
+    await loadInbounds();
+  } catch (e) {
+    select.innerHTML = '<option value="">Ошибка загрузки</option>';
+    toast('Не удалось загрузить ноды', true);
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+}
+
+async function loadInbounds() {
+  const serverId = document.getElementById('inbound-server-select')?.value;
+  const tbody = document.getElementById('inbounds-tbody');
+  if (!serverId) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Сначала добавьте или установите ноду</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Загрузка конфигурации Xray...</td></tr>';
+  try {
+    const items = await api('GET', `/api/servers/${serverId}/inbounds`);
+    document.getElementById('inbound-count').textContent = items.length;
+    document.getElementById('inbound-clients').textContent = items.reduce((sum, item) => sum + (item.client_count || 0), 0);
+    document.getElementById('inbound-ports').textContent = new Set(items.map(item => item.port)).size;
+    tbody.innerHTML = items.length ? items.map(item => `
+      <tr>
+        <td><span class="server-status ${item.enabled ? 'online' : 'offline'}"></span><span class="mono">${escapeHtml(item.tag)}</span></td>
+        <td><span class="badge badge-green">${escapeHtml(item.protocol).toUpperCase()}</span></td>
+        <td><span class="mono">${escapeHtml(item.network)} / ${escapeHtml(item.security)}</span></td>
+        <td><span class="mono">${item.port}</span></td>
+        <td>${escapeHtml(item.server_name || item.path || '—')}</td>
+        <td>${item.client_count || 0}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteInbound('${encodeURIComponent(item.tag)}','${escapeHtml(item.tag)}')">Удалить</button></td>
+      </tr>`).join('') : '<tr><td colspan="7" class="empty-state">Инбаундов нет. Создайте первый профиль подключения.</td></tr>';
+  } catch (e) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="color:#ff9292">${escapeHtml(e.message)}</td></tr>`;
+  }
+}
+
+function openInboundModal() {
+  if (!document.getElementById('inbound-server-select')?.value) {
+    toast('Сначала выберите готовую ноду', true);
+    return;
+  }
+  document.getElementById('inbound-form-error').style.display = 'none';
+  openModal('modal-inbound');
+}
+
+function toggleInboundPreset() {
+  const reality = document.getElementById('inbound-preset').value === 'vless-reality';
+  document.getElementById('inbound-destination-row').style.display = reality ? 'block' : 'none';
+  document.getElementById('inbound-path-row').style.display = reality ? 'none' : 'block';
+  document.getElementById('inbound-host-label').textContent = reality ? 'Server name (SNI)' : 'WebSocket Host';
+}
+
+async function createInbound() {
+  const serverId = document.getElementById('inbound-server-select').value;
+  const error = document.getElementById('inbound-form-error');
+  const payload = {
+    name: document.getElementById('inbound-name').value.trim(),
+    preset: document.getElementById('inbound-preset').value,
+    port: Number(document.getElementById('inbound-port').value),
+    listen: document.getElementById('inbound-listen').value.trim(),
+    server_name: document.getElementById('inbound-server-name').value.trim(),
+    destination: document.getElementById('inbound-destination').value.trim() || null,
+    path: document.getElementById('inbound-path').value.trim() || '/vpn',
+  };
+  if (!payload.name || !payload.port || !payload.server_name) {
+    error.textContent = 'Заполните tag, порт и server name.';
+    error.style.display = 'block';
+    return;
+  }
+  try {
+    await api('POST', `/api/servers/${serverId}/inbounds`, payload);
+    closeModal('modal-inbound');
+    toast('Инбаунд проверен Xray и применён');
+    await loadInbounds();
+  } catch (e) {
+    error.textContent = e.message;
+    error.style.display = 'block';
+  }
+}
+
+async function deleteInbound(ref, label) {
+  if (!confirm(`Удалить инбаунд ${label}? Подключённые к нему клиенты потеряют доступ.`)) return;
+  const serverId = document.getElementById('inbound-server-select').value;
+  try {
+    await api('DELETE', `/api/servers/${serverId}/inbounds/${ref}`);
+    toast('Инбаунд удалён');
+    await loadInbounds();
+  } catch (e) { toast(e.message, true); }
+}
+
+// ── Init ─────────────────────────────────────────────────────
+loadDashboard();
+setInterval(() => {
+  if (document.getElementById('page-dashboard').classList.contains('active')) loadDashboard();
+}, 30000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && document.getElementById('page-dashboard').classList.contains('active')) loadDashboard();
+});
+</script>
+</body>
+</html>
