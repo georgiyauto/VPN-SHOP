@@ -38,6 +38,61 @@ The installer adds Docker when needed, generates all database/Redis/admin/node
 secrets, builds the project, installs Xray in the image, creates the first
 VLESS Reality inbound and performs health/config checks.
 
+##ENV EXAMPLE
+
+```bash
+# ─── VPN Bot v7 — Single Container ───────────────────────────
+# Заполни через веб-интерфейс: https://ВАШ_ДОМЕН/setup
+# ──────────────────────────────────────────────────────────────
+
+# ─── Telegram ────────────────────────────────────────────────
+BOT_TOKEN=your_bot_token_here
+ADMIN_IDS=123456789
+BOT_USERNAME=your_bot_username
+
+# ─── База данных (внутри контейнера — 127.0.0.1) ────────────
+POSTGRES_DB=vpnbot
+POSTGRES_USER=vpnbot
+POSTGRES_PASSWORD=change_me_please
+DATABASE_URL=postgresql+asyncpg://vpnbot:change_me_please@127.0.0.1:5432/vpnbot
+
+# ─── Redis (внутри контейнера) ───────────────────────────────
+REDIS_URL=redis://:change_me_please@127.0.0.1:6379/0
+REDIS_PASSWORD=change_me_please
+
+# ─── Домен ───────────────────────────────────────────────────
+BOT_DOMAIN=https://yourdomain.com
+LETSENCRYPT_EMAIL=admin@yourdomain.com
+
+# ─── Админ панель ────────────────────────────────────────────
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=change_me
+SECRET_KEY=change_this_secret_key
+
+# ─── Платёжные системы ───────────────────────────────────────
+HELEKET_API_KEY=
+HELEKET_SHOP_ID=
+HELEKET_SECRET=
+CRYPTOPAY_TOKEN=
+CARD_LINK_URL=
+
+# ─── v4 фичи ─────────────────────────────────────────────────
+STATUS_CHANNEL_ID=
+SUPPORT_CHAT_ID=
+SUPPORT_USERNAME=
+MINIAPP_AUTH_SKIP=0
+
+# Google OAuth (для входа через Google на сайте)
+GOOGLE_CLIENT_ID=your_client_id.apps.googleusercontent.com
+
+# ─── Plain Xray node ─────────────────────────────────────────────────────────
+XRAY_NODE_TOKEN=generate_a_long_random_token
+XRAY_PUBLIC_HOST=vpn.example.com
+XRAY_CONFIG_PATH=/etc/xray/config.json
+XRAY_STATE_PATH=/var/lib/kawavpn-xray/state.json
+XRAY_RESTART_COMMAND=supervisorctl restart xray
+```
+
 Non-interactive example:
 
 ```bash
